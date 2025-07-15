@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deactivate = exports.activate = void 0;
+exports.activate = activate;
+exports.deactivate = deactivate;
 const path = require("path");
 const vscode_1 = require("vscode");
 const node_1 = require("vscode-languageclient/node");
@@ -11,10 +12,10 @@ function activate(context) {
     // If the extension is launched in debug mode then the debug server options are used
     // Otherwise the run options are used
     const serverOptions = {
-        run: { module: serverModule, transport: node_1.TransportKind.ipc },
+        run: { module: serverModule, transport: node_1.TransportKind.stdio },
         debug: {
             module: serverModule,
-            transport: node_1.TransportKind.ipc,
+            transport: node_1.TransportKind.stdio,
         },
     };
     // Options to control the language client
@@ -31,12 +32,10 @@ function activate(context) {
     // Start the client. This will also launch the server
     client.start();
 }
-exports.activate = activate;
 function deactivate() {
     if (!client) {
         return undefined;
     }
     return client.stop();
 }
-exports.deactivate = deactivate;
 //# sourceMappingURL=extension.js.map
