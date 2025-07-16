@@ -28,7 +28,7 @@ function activate(context) {
         },
     };
     // Create the language client and start the client.
-    client = new node_1.LanguageClient("REPLACE_ME language-server-id", "REPLACE_ME language server name", serverOptions, clientOptions);
+    client = new node_1.LanguageClient("llm-autocomplete language-server-id", "llm-autocomplete language server name", serverOptions, clientOptions);
     // Start the client. This will also launch the server
     client.start();
 }

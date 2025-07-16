@@ -3,9 +3,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const log_1 = require("./log");
 const initialize_1 = require("./methods/initialize");
 const completion_1 = require("./methods/textDocument/completion");
+const didChange_1 = require("./methods/textDocument/didChange");
 const methodLookup = {
     initialize: initialize_1.initialize,
     "textDocument/completion": completion_1.completion,
+    "textDocument/didChange": didChange_1.didChange,
 };
 // Write a json rpc message to client
 const respond = (id, result) => {
@@ -29,10 +31,16 @@ process.stdin.on("data", (chunk) => {
             break;
         const rawMessage = buffer.slice(messageStart, messageStart + contentLength);
         const message = JSON.parse(rawMessage);
-        log_1.default.write({ id: message.id, method: message.method });
+        log_1.default.write({
+            id: message.id,
+            method: message.method,
+        });
         const method = methodLookup[message.method];
         if (method) {
-            respond(message.id, method(message));
+            const result = method(message);
+            if (result !== undefined) {
+                respond(message.id, result);
+            }
         }
         //Remove processed message from buffer
         buffer = buffer.slice(messageStart + contentLength);

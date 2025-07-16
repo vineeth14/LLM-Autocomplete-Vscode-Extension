@@ -1,15 +1,15 @@
 {
-  "name": "REPLACE_ME",
-  "description": "REPLACE_ME",
-  "version": "1.0.0",
-  "author": "REPLACE_ME",
-  "license": "MIT",
-  "engines": {
-    "node": "*"
-  },
-  "repository": {
-    "type": "git",
-    "url": "REPLACE_ME"
-  },
-  "dependencies": {}
+	"name": "llm-autocomplete",
+	"description": "llm-autocomplete",
+	"version": "1.0.0",
+	"author": "llm-autocomplete",
+	"license": "MIT",
+	"engines": {
+		"node": "*"
+	},
+	"repository": {
+		"type": "git",
+		"url": "llm-autocomplete"
+	},
+	"dependencies": {}
 }

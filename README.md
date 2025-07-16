@@ -15,7 +15,7 @@ As an MVP, this omits
 ## Getting Started
 
 1. Clone this repo
-2. Replace items in `package.json` marked `REPLACE_ME` with text related to your extension
+2. Replace items in `package.json` marked `llm-autocomplete` with text related to your extension
 3. Do the same for `client/package.json` and `server/package.json`
 4. Do the same in `client/src/extension.ts`
 5. Run `npm install` from the repo root.
