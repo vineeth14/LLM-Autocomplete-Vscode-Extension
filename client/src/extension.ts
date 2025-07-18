@@ -1,5 +1,6 @@
 import * as path from "path";
-import { workspace, ExtensionContext } from "vscode";
+import * as vscode from "vscode";
+import { workspace, ExtensionContext, languages } from "vscode";
 
 import {
 	LanguageClient,
@@ -8,9 +9,16 @@ import {
 	TransportKind,
 } from "vscode-languageclient/node";
 
+import { LLMInlineCompletionProvider } from "./methods/suggestions";
+
 let client: LanguageClient;
 
+// Global debug -> print to extension host output channel
+export const log = vscode.window.createOutputChannel("LLM Tab Complete");
+
 export function activate(context: ExtensionContext) {
+	log.appendLine("Extension activated");
+	// log.show();
 	// The server is implemented in node
 	const serverModule = context.asAbsolutePath(
 		path.join("server", "out", "server.js")
@@ -46,6 +54,14 @@ export function activate(context: ExtensionContext) {
 
 	// Start the client. This will also launch the server
 	client.start();
+
+	const provider = new LLMInlineCompletionProvider();
+
+	const disposable = languages.registerInlineCompletionItemProvider(
+		{ pattern: "**" },
+		provider
+	);
+	context.subscriptions.push(disposable);
 }
 
 export function deactivate(): Thenable<void> | undefined {
