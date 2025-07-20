@@ -7,7 +7,7 @@ const path = require("path");
 const vscode = require("vscode");
 const vscode_1 = require("vscode");
 const node_1 = require("vscode-languageclient/node");
-const suggestions_1 = require("./methods/suggestions");
+const LLMInlineCompletionProvider_1 = require("./autocomplete/LLMInlineCompletionProvider");
 let client;
 // Global debug -> print to extension host output channel
 exports.log = vscode.window.createOutputChannel("LLM Tab Complete");
@@ -38,7 +38,7 @@ function activate(context) {
     client = new node_1.LanguageClient("llm-autocomplete language-server-id", "llm-autocomplete language server name", serverOptions, clientOptions);
     // Start the client. This will also launch the server
     client.start();
-    const provider = new suggestions_1.LLMInlineCompletionProvider();
+    const provider = new LLMInlineCompletionProvider_1.LLMInlineCompletionProvider();
     const disposable = vscode_1.languages.registerInlineCompletionItemProvider({ pattern: "**" }, provider);
     context.subscriptions.push(disposable);
 }

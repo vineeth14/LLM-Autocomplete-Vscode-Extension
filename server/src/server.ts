@@ -24,8 +24,6 @@ type RequestMethod = (
 type NotificationMethod = (message: NotificationMessage) => void;
 const methodLookup: Record<string, RequestMethod | NotificationMethod> = {
 	initialize,
-	"textDocument/completion": completion,
-	"textDocument/didChange": didChange,
 };
 
 // Write a json rpc message to client

@@ -9,7 +9,7 @@ import {
 	TransportKind,
 } from "vscode-languageclient/node";
 
-import { LLMInlineCompletionProvider } from "./methods/suggestions";
+import { LLMInlineCompletionProvider } from "./autocomplete/LLMInlineCompletionProvider";
 
 let client: LanguageClient;
 

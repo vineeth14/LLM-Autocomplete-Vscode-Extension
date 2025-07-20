@@ -1,19 +1,18 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.registerInlineCompletions = registerInlineCompletions;
+// THIS ISN'T BEING USED -> Implements a demo/test provider that looks for special comments above the cursor and creates inline completions based on those.
 const vscode = require("vscode");
 const vscode_1 = require("vscode");
 function registerInlineCompletions(context) {
     const provider = {
         async provideInlineCompletionItems(document, position, _context, _token) {
             const regexp = /\/\/ \[(.+?),(.+?)\)(.*?):(.*)/;
-            if (position.line <= 0) {
-                return;
-            }
+            // if (position.line <= 0) {
+            // 	return; // If cursor is at the top of the file, don't show completions
+            // }
             const result = {
                 items: [],
-                // 'commands' is only available in the proposed API. Uncomment if using proposed API.
-                // commands: [],
             };
             let offset = 1;
             while (offset > 0) {

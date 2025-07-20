@@ -2,12 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const log_1 = require("./log");
 const initialize_1 = require("./methods/initialize");
-const completion_1 = require("./methods/textDocument/completion");
-const didChange_1 = require("./methods/textDocument/didChange");
 const methodLookup = {
     initialize: initialize_1.initialize,
-    "textDocument/completion": completion_1.completion,
-    "textDocument/didChange": didChange_1.didChange,
 };
 // Write a json rpc message to client
 const respond = (id, result) => {
