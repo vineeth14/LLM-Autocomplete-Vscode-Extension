@@ -4,7 +4,7 @@ exports.getSuggestion = getSuggestion;
 const prompt_1 = require("./prompt");
 const extension_1 = require("../extension");
 const ollamaUrl = "http://localhost:11434";
-const modelName = "qwen2.5-coder:1.5b";
+const modelName = "starcoder:3b";
 async function callOllama(prompt, options, token) {
     const controller = new AbortController();
     const signal = controller.signal;
@@ -66,6 +66,15 @@ async function getSuggestion(parameters, token) {
             .replace(/<\|[^|]*\|>/g, "") // Remove any other special tokens
             .trim();
         extension_1.log.appendLine(`[getSuggestion] After trimming: "${suggestion}"`);
+        // Filter out conversational responses that start with explanatory text
+        if (suggestion.toLowerCase().startsWith("it looks like") ||
+            suggestion.toLowerCase().startsWith("however") ||
+            suggestion.toLowerCase().startsWith("here's") ||
+            suggestion.includes("issues with your code") ||
+            suggestion.includes("corrected version")) {
+            extension_1.log.appendLine(`[getSuggestion] Filtered out conversational response`);
+            return undefined;
+        }
         if (!suggestion || suggestion.trim().length === 0) {
             return undefined;
         }

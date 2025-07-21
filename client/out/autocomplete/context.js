@@ -1,8 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getContext = getContext;
-const MAX_CONTEXT_LINES = 40; // Max number of lines to use for context
+const extension_1 = require("../extension");
+const MAX_CONTEXT_LINES = 20; // More context for better understanding
 function getContext(document, position) {
+    extension_1.log.appendLine(`[getContext] Called at position line:${position.line}, char:${position.character}`);
     const text = document.getText();
     const offset = document.offsetAt(position);
     const prefix = text.substring(0, offset);
@@ -12,6 +14,9 @@ function getContext(document, position) {
     const suffixLines = suffix.split("\n");
     const limitedPrefix = prefixLines.slice(-MAX_CONTEXT_LINES).join("\n");
     const limitedSuffix = suffixLines.slice(0, MAX_CONTEXT_LINES).join("\n");
+    extension_1.log.appendLine(`[getContext] Prefix length: ${limitedPrefix.length}, Suffix length: ${limitedSuffix.length}`);
+    extension_1.log.appendLine(`[getContext] Prefix ends with: "${limitedPrefix.slice(-50)}"`);
+    extension_1.log.appendLine(`[getContext] Suffix starts with: "${limitedSuffix.slice(0, 50)}"`);
     // The <CURSOR> marker is no longer needed with the new FIM prompt format
     // return `${limitedPrefix}<｜fim_middle｜>${limitedSuffix}`;
     return {

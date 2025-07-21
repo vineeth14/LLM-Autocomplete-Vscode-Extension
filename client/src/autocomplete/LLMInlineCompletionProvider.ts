@@ -21,6 +21,8 @@ export class LLMInlineCompletionProvider {
 		token: CancellationToken
 	): Promise<InlineCompletionItem[]> {
 		try {
+			log.appendLine(`[LLMInlineCompletionProvider] Triggered at line:${position.line}, char:${position.character}`);
+			
 			// const now = Date.now();
 			// if (now - this.lastTriggerTime < this.debounceMs) {
 			// 	log.appendLine(
@@ -35,7 +37,11 @@ export class LLMInlineCompletionProvider {
 			const textBeforeCursor = document
 				.lineAt(position)
 				.text.substring(0, position.character);
+			
+			log.appendLine(`[LLMInlineCompletionProvider] Text before cursor: "${textBeforeCursor}"`);
+			
 			if (textBeforeCursor.length === 0) {
+				log.appendLine(`[LLMInlineCompletionProvider] No text before cursor, skipping`);
 				return [];
 			}
 

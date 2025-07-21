@@ -8,7 +8,7 @@ interface OllamaResponse {
 }
 
 const ollamaUrl = "http://localhost:11434";
-const modelName = "qwen2.5-coder:1.5b";
+const modelName = "starcoder:3b";
 
 async function callOllama(
 	prompt: string,
@@ -77,7 +77,11 @@ export async function getSuggestion(
 		);
 		const promptObj = systemPrompt(parameters);
 
-		const rawSuggestion = await callOllama(promptObj.content, promptObj.options, token);
+		const rawSuggestion = await callOllama(
+			promptObj.content,
+			promptObj.options,
+			token
+		);
 		log.appendLine(
 			`[getSuggestion] Raw response from Ollama: "${rawSuggestion}"`
 		);
@@ -89,6 +93,18 @@ export async function getSuggestion(
 			.trim();
 
 		log.appendLine(`[getSuggestion] After trimming: "${suggestion}"`);
+
+		// Filter out conversational responses that start with explanatory text
+		if (
+			suggestion.toLowerCase().startsWith("it looks like") ||
+			suggestion.toLowerCase().startsWith("however") ||
+			suggestion.toLowerCase().startsWith("here's") ||
+			suggestion.includes("issues with your code") ||
+			suggestion.includes("corrected version")
+		) {
+			log.appendLine(`[getSuggestion] Filtered out conversational response`);
+			return undefined;
+		}
 
 		if (!suggestion || suggestion.trim().length === 0) {
 			return undefined;
