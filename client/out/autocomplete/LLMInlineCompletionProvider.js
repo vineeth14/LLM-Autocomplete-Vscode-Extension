@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.LLMInlineCompletionProvider = void 0;
 const vscode_1 = require("vscode");
 const suggestion_1 = require("./suggestion");
-const context_1 = require("./context");
+const context_1 = require("./context/context");
 const extension_1 = require("../extension");
 class LLMInlineCompletionProvider {
     constructor() {
@@ -45,7 +45,8 @@ class LLMInlineCompletionProvider {
             return [item];
         }
         catch (err) {
-            if (err?.name !== "AbortError" && !(token && token.isCancellationRequested)) {
+            if (err?.name !== "AbortError" &&
+                !(token && token.isCancellationRequested)) {
                 extension_1.log.appendLine(`[AutoComplete] Error: ${err?.message || err}`);
             }
             return [];

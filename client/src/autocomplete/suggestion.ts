@@ -1,18 +1,14 @@
 import { CancellationToken } from "vscode";
-import { systemPrompt, Parameters } from "./prompt";
+import { systemPrompt } from "./prompt";
+import { Parameters, OllamaResponse, CompletionOptions } from "./types";
 import { log } from "../extension";
-
-interface OllamaResponse {
-	response: string;
-	done: boolean;
-}
 
 const ollamaUrl = "http://localhost:11434";
 const modelName = "starcoder:3b";
 
 async function callOllama(
 	prompt: string,
-	options?: any,
+	options?: CompletionOptions,
 	token?: CancellationToken
 ): Promise<string> {
 	const controller = new AbortController();

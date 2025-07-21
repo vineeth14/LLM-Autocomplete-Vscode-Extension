@@ -9,12 +9,7 @@ const qwenCoderFimTemplate = {
         top_p: 0.3,
         num_predict: 30,
         repeat_penalty: 1.05,
-        stop: [
-            "<fim_prefix>",
-            "<fim_suffix>",
-            "<fim_middle>",
-            "\n\n"
-        ]
+        stop: ["<fim_prefix>", "<fim_suffix>", "<fim_middle>", "\n\n"],
     },
 };
 const systemPrompt = (parameters) => {

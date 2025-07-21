@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getContext = getContext;
-const extension_1 = require("../extension");
+const extension_1 = require("../../extension");
 const MAX_CONTEXT_LINES = 100; // More context for better understanding
 function getContext(document, position) {
     extension_1.log.appendLine(`[getContext] Called at position line:${position.line}, char:${position.character}`);

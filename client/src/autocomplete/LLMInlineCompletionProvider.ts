@@ -7,7 +7,8 @@ import {
 	CancellationToken,
 } from "vscode";
 import { getSuggestion } from "./suggestion";
-import { getContext } from "./context";
+import { getContext } from "./context/context";
+import { Parameters } from "./types";
 import { log } from "../extension";
 
 export class LLMInlineCompletionProvider {
@@ -21,8 +22,10 @@ export class LLMInlineCompletionProvider {
 		token: CancellationToken
 	): Promise<InlineCompletionItem[]> {
 		try {
-			log.appendLine(`[LLMInlineCompletionProvider] Triggered at line:${position.line}, char:${position.character}`);
-			
+			log.appendLine(
+				`[LLMInlineCompletionProvider] Triggered at line:${position.line}, char:${position.character}`
+			);
+
 			// const now = Date.now();
 			// if (now - this.lastTriggerTime < this.debounceMs) {
 			// 	log.appendLine(
@@ -37,15 +40,19 @@ export class LLMInlineCompletionProvider {
 			const textBeforeCursor = document
 				.lineAt(position)
 				.text.substring(0, position.character);
-			
-			log.appendLine(`[LLMInlineCompletionProvider] Text before cursor: "${textBeforeCursor}"`);
-			
+
+			log.appendLine(
+				`[LLMInlineCompletionProvider] Text before cursor: "${textBeforeCursor}"`
+			);
+
 			if (textBeforeCursor.length === 0) {
-				log.appendLine(`[LLMInlineCompletionProvider] No text before cursor, skipping`);
+				log.appendLine(
+					`[LLMInlineCompletionProvider] No text before cursor, skipping`
+				);
 				return [];
 			}
 
-			const context = getContext(document, position);
+			const context: Parameters = getContext(document, position);
 			const suggestion = await getSuggestion(context, token);
 
 			if (!suggestion) {
@@ -53,8 +60,7 @@ export class LLMInlineCompletionProvider {
 			}
 
 			// Clean the suggestion - remove any unwanted tokens
-            const cleanSuggestion = suggestion.trim();
-
+			const cleanSuggestion = suggestion.trim();
 
 			if (!cleanSuggestion) {
 				return [];
@@ -66,7 +72,10 @@ export class LLMInlineCompletionProvider {
 			);
 			return [item];
 		} catch (err: any) {
-			if (err?.name !== "AbortError" && !(token && token.isCancellationRequested)) {
+			if (
+				err?.name !== "AbortError" &&
+				!(token && token.isCancellationRequested)
+			) {
 				log.appendLine(`[AutoComplete] Error: ${err?.message || err}`);
 			}
 			return [];
