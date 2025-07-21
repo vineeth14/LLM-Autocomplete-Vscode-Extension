@@ -4,11 +4,13 @@ exports.LLMInlineCompletionProvider = void 0;
 const vscode_1 = require("vscode");
 const suggestion_1 = require("./suggestion");
 const context_1 = require("./context/context");
+const contextRetrievalService_1 = require("./context/contextRetrievalService");
 const extension_1 = require("../extension");
 class LLMInlineCompletionProvider {
     constructor() {
         this.lastTriggerTime = 0;
         this.debounceMs = 0;
+        this.contextRetrievalService = new contextRetrievalService_1.ContextRetrievalService();
     }
     async provideInlineCompletionItems(document, position, inlineContext, token) {
         try {
@@ -32,6 +34,8 @@ class LLMInlineCompletionProvider {
                 return [];
             }
             const context = (0, context_1.getContext)(document, position);
+            // Also call the context retrieval service for testing
+            this.contextRetrievalService.getContext(document, position);
             const suggestion = await (0, suggestion_1.getSuggestion)(context, token);
             if (!suggestion) {
                 return [];

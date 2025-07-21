@@ -15,6 +15,7 @@ let client: LanguageClient;
 
 // Global debug -> print to extension host output channel
 export const log = vscode.window.createOutputChannel("LLM Tab Complete");
+export const astLog = vscode.window.createOutputChannel("AST Testing");
 
 export function activate(context: ExtensionContext) {
 	log.appendLine("Extension activated");

@@ -8,12 +8,14 @@ import {
 } from "vscode";
 import { getSuggestion } from "./suggestion";
 import { getContext } from "./context/context";
+import { ContextRetrievalService } from "./context/contextRetrievalService";
 import { Parameters } from "./types";
 import { log } from "../extension";
 
 export class LLMInlineCompletionProvider {
 	private lastTriggerTime: number = 0;
 	private debounceMs: number = 0;
+	private contextRetrievalService = new ContextRetrievalService();
 
 	async provideInlineCompletionItems(
 		document: TextDocument,
@@ -53,6 +55,10 @@ export class LLMInlineCompletionProvider {
 			}
 
 			const context: Parameters = getContext(document, position);
+			
+			// Also call the context retrieval service for testing
+			this.contextRetrievalService.getContext(document, position);
+			
 			const suggestion = await getSuggestion(context, token);
 
 			if (!suggestion) {

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.log = void 0;
+exports.astLog = exports.log = void 0;
 exports.activate = activate;
 exports.deactivate = deactivate;
 const path = require("path");
@@ -11,6 +11,7 @@ const LLMInlineCompletionProvider_1 = require("./autocomplete/LLMInlineCompletio
 let client;
 // Global debug -> print to extension host output channel
 exports.log = vscode.window.createOutputChannel("LLM Tab Complete");
+exports.astLog = vscode.window.createOutputChannel("AST Testing");
 function activate(context) {
     exports.log.appendLine("Extension activated");
     // log.show();

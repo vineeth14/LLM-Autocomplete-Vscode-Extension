@@ -13,8 +13,7 @@ class ContextRetrievalService {
      * @returns Array of context items
      */
     async getContext(document, position) {
-        // Only process Python files
-        if (document.languageId !== 'python') {
+        if (document.languageId !== "python") {
             return [];
         }
         const context = [];
@@ -77,13 +76,13 @@ class ContextRetrievalService {
      */
     formatContextForPrompt(items) {
         if (items.length === 0)
-            return '';
-        let result = '# Relevant context:\n';
+            return "";
+        let result = "# Relevant context:\n";
         // Group by type for better organization
-        const imports = items.filter(i => i.type === 'import');
-        const functions = items.filter(i => i.type === 'function');
-        const classes = items.filter(i => i.type === 'class');
-        const variables = items.filter(i => i.type === 'variable');
+        const imports = items.filter((i) => i.type === "import");
+        const functions = items.filter((i) => i.type === "function");
+        const classes = items.filter((i) => i.type === "class");
+        const variables = items.filter((i) => i.type === "variable");
         // TODO: Format each group appropriately
         return result;
     }
