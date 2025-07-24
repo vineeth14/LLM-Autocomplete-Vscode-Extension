@@ -18,7 +18,8 @@
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
-		"compile": "tsc -b",
+		"compile": "tsc -b && npm run copy-queries",
+		"copy-queries": "mkdir -p client/out/autocomplete/context/languages/python/queries && cp client/src/autocomplete/context/languages/python/queries/*.scm client/out/autocomplete/context/languages/python/queries/",
 		"watch": "tsc -b -w",
 		"postinstall": "cd client && npm install && cd ../server && npm install && cd .."
 	},

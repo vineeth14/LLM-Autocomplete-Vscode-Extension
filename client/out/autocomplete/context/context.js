@@ -2,9 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getContext = getContext;
 const extension_1 = require("../../extension");
-const MAX_CONTEXT_LINES = 100; // More context for better understanding
+const MAX_CONTEXT_LINES = 40;
+/**
+ * @deprecated Use ContextRetrievalService.getContextForCompletion() instead
+ * Legacy basic context extraction function
+ */
 function getContext(document, position) {
-    extension_1.log.appendLine(`[getContext] Called at position line:${position.line}, char:${position.character}`);
+    extension_1.log.appendLine(`[getContext] Legacy function called at position line:${position.line}, char:${position.character}`);
     const text = document.getText();
     const offset = document.offsetAt(position);
     const prefix = text.substring(0, offset);
@@ -15,8 +19,8 @@ function getContext(document, position) {
     const limitedPrefix = prefixLines.slice(-MAX_CONTEXT_LINES).join("\n");
     const limitedSuffix = suffixLines.slice(0, MAX_CONTEXT_LINES).join("\n");
     return {
-        prefix: prefix,
-        suffix: suffix,
+        prefix: limitedPrefix,
+        suffix: limitedSuffix,
     };
 }
 //# sourceMappingURL=context.js.map

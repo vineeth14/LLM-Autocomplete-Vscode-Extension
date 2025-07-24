@@ -7,8 +7,7 @@ import {
 	CancellationToken,
 } from "vscode";
 import { getSuggestion } from "./suggestion";
-import { getContext } from "./context/context";
-import { ContextRetrievalService } from "./context/contextRetrievalService";
+import { ContextRetrievalService } from "./context/service";
 import { Parameters } from "./types";
 import { log } from "../extension";
 
@@ -24,10 +23,6 @@ export class LLMInlineCompletionProvider {
 		token: CancellationToken
 	): Promise<InlineCompletionItem[]> {
 		try {
-			log.appendLine(
-				`[LLMInlineCompletionProvider] Triggered at line:${position.line}, char:${position.character}`
-			);
-
 			// const now = Date.now();
 			// if (now - this.lastTriggerTime < this.debounceMs) {
 			// 	log.appendLine(
@@ -43,22 +38,17 @@ export class LLMInlineCompletionProvider {
 				.lineAt(position)
 				.text.substring(0, position.character);
 
-			log.appendLine(
-				`[LLMInlineCompletionProvider] Text before cursor: "${textBeforeCursor}"`
-			);
-
-			if (textBeforeCursor.length === 0) {
-				log.appendLine(
-					`[LLMInlineCompletionProvider] No text before cursor, skipping`
+			const context: Parameters =
+				await this.contextRetrievalService.getContextForCompletion(
+					document,
+					position
 				);
+
+			// If context service returns empty context, skip completion
+			if (!context.prefix && !context.suffix) {
 				return [];
 			}
 
-			const context: Parameters = getContext(document, position);
-			
-			// Also call the context retrieval service for testing
-			this.contextRetrievalService.getContext(document, position);
-			
 			const suggestion = await getSuggestion(context, token);
 
 			if (!suggestion) {

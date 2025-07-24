@@ -6,6 +6,10 @@ export interface Parameters {
 	prefix: string;
 	suffix: string;
 	context?: string;
+	// Enhanced position information
+	cursorOffset?: number;
+	isAtEndOfLine?: boolean;
+	currentLineText?: string;
 }
 
 export interface AutocompleteTemplate {

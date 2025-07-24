@@ -56,29 +56,24 @@ async function callOllama(prompt, options, token) {
 }
 async function getSuggestion(parameters, token) {
     try {
-        extension_1.log.appendLine(`[getSuggestion] Called with parameters: ${JSON.stringify(parameters)}`);
         const promptObj = (0, prompt_1.systemPrompt)(parameters);
         const rawSuggestion = await callOllama(promptObj.content, promptObj.options, token);
-        extension_1.log.appendLine(`[getSuggestion] Raw response from Ollama: "${rawSuggestion}"`);
         // Just clean up basic tokens and return the suggestion
         let suggestion = rawSuggestion
             .replace(/<\|fim_[^|]*\|>/g, "") // Remove FIM tokens
             .replace(/<\|[^|]*\|>/g, "") // Remove any other special tokens
             .trim();
-        extension_1.log.appendLine(`[getSuggestion] After trimming: "${suggestion}"`);
         // Filter out conversational responses that start with explanatory text
         if (suggestion.toLowerCase().startsWith("it looks like") ||
             suggestion.toLowerCase().startsWith("however") ||
             suggestion.toLowerCase().startsWith("here's") ||
             suggestion.includes("issues with your code") ||
             suggestion.includes("corrected version")) {
-            extension_1.log.appendLine(`[getSuggestion] Filtered out conversational response`);
             return undefined;
         }
         if (!suggestion || suggestion.trim().length === 0) {
             return undefined;
         }
-        extension_1.log.appendLine(`[getSuggestion] Returning suggestion: "${suggestion}"`);
         return suggestion;
     }
     catch (err) {

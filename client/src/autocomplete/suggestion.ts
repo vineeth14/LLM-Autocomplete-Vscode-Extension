@@ -68,9 +68,6 @@ export async function getSuggestion(
 	token?: CancellationToken
 ): Promise<string | undefined> {
 	try {
-		log.appendLine(
-			`[getSuggestion] Called with parameters: ${JSON.stringify(parameters)}`
-		);
 		const promptObj = systemPrompt(parameters);
 
 		const rawSuggestion = await callOllama(
@@ -78,17 +75,12 @@ export async function getSuggestion(
 			promptObj.options,
 			token
 		);
-		log.appendLine(
-			`[getSuggestion] Raw response from Ollama: "${rawSuggestion}"`
-		);
 
 		// Just clean up basic tokens and return the suggestion
 		let suggestion = rawSuggestion
 			.replace(/<\|fim_[^|]*\|>/g, "") // Remove FIM tokens
 			.replace(/<\|[^|]*\|>/g, "") // Remove any other special tokens
 			.trim();
-
-		log.appendLine(`[getSuggestion] After trimming: "${suggestion}"`);
 
 		// Filter out conversational responses that start with explanatory text
 		if (
@@ -98,7 +90,6 @@ export async function getSuggestion(
 			suggestion.includes("issues with your code") ||
 			suggestion.includes("corrected version")
 		) {
-			log.appendLine(`[getSuggestion] Filtered out conversational response`);
 			return undefined;
 		}
 
@@ -106,7 +97,6 @@ export async function getSuggestion(
 			return undefined;
 		}
 
-		log.appendLine(`[getSuggestion] Returning suggestion: "${suggestion}"`);
 		return suggestion;
 	} catch (err: any) {
 		if (

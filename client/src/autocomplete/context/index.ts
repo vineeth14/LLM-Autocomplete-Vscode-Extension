@@ -1,24 +1,36 @@
 /**
- * This module is responsible for gathering relevant code context
- * to improve LLM completion quality using VSCode's language services.
+ * Context Retrieval System
+ * 
+ * Currently uses simple cursor-based context extraction.
+ * AST-based infrastructure is available but commented out.
+ * See README.md for details on enabling AST context.
  */
 
-export { ContextRetrievalService } from "./contextRetrievalService";
+export { ContextRetrievalService } from "./service";
 
+// Currently unused - available for future AST-based context
 export type {
 	ContextItem,
 	ContextType,
 	ContextConfig,
 	ContextResult,
+	AutocompleteSnippet,
+	ScopeLevel,
+	SymbolType,
 } from "./types";
 
-// Export utility functions (when we add them)
-// export { formatContext, filterContext } from './utils';
+// Currently unused - available for future AST-based context
+// export { 
+// 	prioritizeSnippets, 
+// 	formatSnippetsAsContext, 
+// 	buildScopeAwareContext 
+// } from "./formatters";
 
-export const DEFAULT_CONTEXT_CONFIG = {
-	maxItems: 8,
-	searchRadius: 100,
-	includeFunctionSignatures: true,
-	includeClassHierarchy: true,
-	minRelevance: 0.2,
-} as const;
+// Currently unused - available for future AST-based context
+// export const DEFAULT_CONTEXT_CONFIG = {
+// 	maxItems: 8,
+// 	searchRadius: 100,
+// 	includeFunctionSignatures: true,
+// 	includeClassHierarchy: true,
+// 	minRelevance: 0.2,
+// } as const;

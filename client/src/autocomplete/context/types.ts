@@ -1,3 +1,10 @@
+/**
+ * TYPE DEFINITIONS FOR CONTEXT SYSTEM
+ * 
+ * These types support both simple cursor-based context (currently active)
+ * and sophisticated AST-based context extraction (currently inactive).
+ */
+
 import * as vscode from "vscode";
 
 export interface ContextItem {
@@ -51,4 +58,36 @@ export interface ContextResult {
 
 	/** Any errors encountered during retrieval */
 	errors: string[];
+}
+
+/**
+ * Scope levels for hierarchical context
+ */
+export type ScopeLevel = 
+	| "current"    // Current function/block
+	| "parent"     // Parent function (for nested functions)
+	| "class"      // Class scope
+	| "module";    // Module/file scope
+
+/**
+ * Types of symbols available in scope
+ */
+export type SymbolType =
+	| "function"   // Function definitions
+	| "method"     // Class methods  
+	| "variable"   // Variables/parameters
+	| "class"      // Class definitions
+	| "import"     // Import statements
+	| "property";  // Class properties
+
+/**
+ * Autocomplete snippet with scope information
+ */
+export interface AutocompleteSnippet {
+	content: string;
+	filepath: string;
+	type: "code";
+	scopeLevel: ScopeLevel;
+	symbolType: SymbolType;
+	description?: string; // Compressed docstring or comment
 }

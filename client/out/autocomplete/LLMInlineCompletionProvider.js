@@ -3,18 +3,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.LLMInlineCompletionProvider = void 0;
 const vscode_1 = require("vscode");
 const suggestion_1 = require("./suggestion");
-const context_1 = require("./context/context");
-const contextRetrievalService_1 = require("./context/contextRetrievalService");
+const service_1 = require("./context/service");
 const extension_1 = require("../extension");
 class LLMInlineCompletionProvider {
     constructor() {
         this.lastTriggerTime = 0;
         this.debounceMs = 0;
-        this.contextRetrievalService = new contextRetrievalService_1.ContextRetrievalService();
+        this.contextRetrievalService = new service_1.ContextRetrievalService();
     }
     async provideInlineCompletionItems(document, position, inlineContext, token) {
         try {
-            extension_1.log.appendLine(`[LLMInlineCompletionProvider] Triggered at line:${position.line}, char:${position.character}`);
             // const now = Date.now();
             // if (now - this.lastTriggerTime < this.debounceMs) {
             // 	log.appendLine(
@@ -28,14 +26,11 @@ class LLMInlineCompletionProvider {
             const textBeforeCursor = document
                 .lineAt(position)
                 .text.substring(0, position.character);
-            extension_1.log.appendLine(`[LLMInlineCompletionProvider] Text before cursor: "${textBeforeCursor}"`);
-            if (textBeforeCursor.length === 0) {
-                extension_1.log.appendLine(`[LLMInlineCompletionProvider] No text before cursor, skipping`);
+            const context = await this.contextRetrievalService.getContextForCompletion(document, position);
+            // If context service returns empty context, skip completion
+            if (!context.prefix && !context.suffix) {
                 return [];
             }
-            const context = (0, context_1.getContext)(document, position);
-            // Also call the context retrieval service for testing
-            this.contextRetrievalService.getContext(document, position);
             const suggestion = await (0, suggestion_1.getSuggestion)(context, token);
             if (!suggestion) {
                 return [];
