@@ -26,3 +26,6 @@ def numIslands(grid: List[List[str]]) -> int:
 
 
 def fibonacci(n):
+print("fibonacci", n)
+print("Hello World")
+print()

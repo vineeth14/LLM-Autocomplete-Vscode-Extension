@@ -1,19 +1,14 @@
 import * as vscode from "vscode";
-import { astLog } from "../../extension";
 import { Parameters } from "../types";
-
-// Commented out unused imports for potential future use
-// import { ContextItem, AutocompleteSnippet } from "./types";
-// import { getAst, getTreePathAtCursor, getContextForPath } from "./ast";
-// import {
-// 	prioritizeSnippets,
-// 	formatSnippetsAsContext,
-// 	buildScopeAwareContext,
-// } from "./formatters";
+import { getAst, getTreePathAtCursor, getContextForPath } from "./ast";
+import { astLog } from "../../extension";
+import { ContextItem, AutocompleteSnippet } from "./types";
+import { prioritizeSnippets, formatSnippetsAsContext, buildScopeAwareContext } from "./formatters";
 
 export class ContextRetrievalService {
 	private static readonly MAX_CONTEXT_LINES = 20; // Reduced from 40
 	private static readonly ENHANCED_CONTEXT_LINES = 15; // Reduced from 25
+	
 	/**
 	 * Get context for LLM completion using simple cursor-based approach
 	 * @param document - The current document
@@ -27,6 +22,7 @@ export class ContextRetrievalService {
 		return this.getSimpleCursorContext(document, position);
 	}
 
+
 	private getSimpleCursorContext(
 		document: vscode.TextDocument,
 		position: vscode.Position
@@ -36,21 +32,17 @@ export class ContextRetrievalService {
 		const currentLine = position.line;
 		const currentChar = position.character;
 
-		// Get 3-4 lines before and 1-2 lines after cursor for context
 		const contextBefore = 3;
 		const contextAfter = 1;
-
 		const startLine = Math.max(0, currentLine - contextBefore);
 		const endLine = Math.min(lines.length - 1, currentLine + contextAfter);
 
-		// Build prefix: all context lines + current line up to cursor
 		const prefixLines = lines.slice(startLine, currentLine);
 		const currentLinePrefix =
 			lines[currentLine]?.substring(0, currentChar) || "";
 		const allPrefixLines = [...prefixLines, currentLinePrefix];
 		const prefix = allPrefixLines.join("\n");
 
-		// Build suffix: current line after cursor + context lines after
 		const currentLineSuffix = lines[currentLine]?.substring(currentChar) || "";
 		const suffixLines = lines.slice(currentLine + 1, endLine + 1);
 		const allSuffixLines = [currentLineSuffix, ...suffixLines];
@@ -61,13 +53,6 @@ export class ContextRetrievalService {
 		const currentLineText = lines[currentLine] || "";
 		const isAtEndOfLine = currentChar === currentLineText.length;
 
-		astLog.appendLine(
-			`[SimpleCursorContext] Prefix: ${prefix.length} chars, Suffix: ${suffix.length} chars`
-		);
-		astLog.appendLine(
-			`[SimpleCursorContext] Cursor offset: ${cursorOffset}, isAtEndOfLine: ${isAtEndOfLine}`
-		);
-
 		return {
 			prefix: prefix,
 			suffix: suffix,
@@ -77,115 +62,188 @@ export class ContextRetrievalService {
 		};
 	}
 
-	// =============================================================================
-	// AST-BASED CONTEXT FUNCTIONS (Currently commented out for future use)
-	// =============================================================================
-	
-	// Main AST context extraction method - enable this to use AST-based context
-	// private async getScopedASTContext(
-	// 	document: vscode.TextDocument,
-	// 	position: vscode.Position
-	// ): Promise<Parameters | null> {
-	// 	const { getAst, getTreePathAtCursor } = await import("./ast");
-	// 	const text = document.getText();
-	// 	const characterOffset = document.offsetAt(position);
-	// 	const textUpToCursor = text.substring(0, characterOffset);
-	// 	const byteOffset = Buffer.from(textUpToCursor, "utf8").length;
+	// ===== UNUSED CODE - AST-BASED CONTEXT METHODS =====
+	// The following methods are currently unused as the extension uses simple cursor-based context
+	// instead of the more complex AST-based approach for better LLM performance
 
-	// 	const ast = await getAst(text);
-	// 	if (!ast) return null;
+	private async getScopedASTContext(
+		document: vscode.TextDocument,
+		position: vscode.Position
+	): Promise<Parameters | null> {
 
-	// 	const astPath = await getTreePathAtCursor(ast, byteOffset, position.line);
-	// 	if (!astPath || astPath.length === 0) return null;
+		const text = document.getText();
+		const characterOffset = document.offsetAt(position);
 
-	// 	return this.extractStructuredContext(ast, astPath, document, position, byteOffset);
-	// }
+		// Convert character offset to byte offset for tree-sitter
+		const textUpToCursor = text.substring(0, characterOffset);
+		const byteOffset = Buffer.from(textUpToCursor, "utf8").length;
 
-	// Core AST context builder - combines module context + scope context + cursor context
-	// private async extractStructuredContext(
-	// 	ast: any,
-	// 	astPath: any[],
-	// 	document: vscode.TextDocument,
-	// 	position: vscode.Position,
-	// 	byteOffset: number
-	// ): Promise<Parameters> {
-	// 	const text = document.getText();
-	// 	const currentScope = astPath.find(node => 
-	// 		node.type === "function_definition" || node.type === "class_definition"
-	// 	);
+		const ast = await getAst(text);
+		if (!ast) {
+			astLog.appendLine("[AST-Only Context] Failed to parse AST");
+			return null;
+		}
 
-	// 	const moduleContext = await this.extractModuleContext(ast, document.uri.fsPath);
-	// 	const scopeContext = currentScope 
-	// 		? await this.extractCurrentScopeContext(currentScope, document.uri.fsPath) 
-	// 		: "";
-	// 	const { prefix, suffix } = this.extractCleanCursorContext(ast, text, byteOffset, position);
+		// Get the AST path to understand scope
+		const astPath = await getTreePathAtCursor(ast, byteOffset, position.line);
+		if (!astPath || astPath.length === 0) {
+			astLog.appendLine("[AST-Only Context] No valid AST path found");
+			return null;
+		}
 
-	// 	return {
-	// 		prefix,
-	// 		suffix,
-	// 		context: moduleContext + (scopeContext ? "\n\n" + scopeContext : "")
-	// 	};
-	// }
+		// Extract structured context from AST
+		const contextData = await this.extractStructuredContext(
+			ast,
+			astPath,
+			document,
+			position,
+			byteOffset
+		);
+		return contextData;
+	}
 
-	// Extract imports and top-level function/class signatures
-	// private async extractModuleContext(ast: any, filepath: string): Promise<string> {
-	// 	const { getContextForPath } = await import("./ast");
-	// 	const snippets = await getContextForPath(filepath, [ast.rootNode]);
-	// 	const moduleSnippets = snippets.filter(s => 
-	// 		s.scopeLevel === "module" && 
-	// 		["import", "function", "class"].includes(s.symbolType)
-	// 	);
-	// 	return moduleSnippets.map(s => s.content).join("\n");
-	// }
+	private async extractStructuredContext(
+		ast: any,
+		astPath: any[],
+		document: vscode.TextDocument,
+		position: vscode.Position,
+		byteOffset: number
+	): Promise<Parameters> {
+		const text = document.getText();
 
-	// Extract current function/class context where cursor is located
-	// private async extractCurrentScopeContext(scopeNode: any, filepath: string): Promise<string> {
-	// 	const { getContextForPath } = await import("./ast");
-	// 	const snippets = await getContextForPath(filepath, [scopeNode]);
-	// 	const scopeSnippets = snippets.filter(s => 
-	// 		s.scopeLevel === "current" && 
-	// 		["function", "class"].includes(s.symbolType)
-	// 	);
-	// 	return scopeSnippets.map(s => s.content).join("\n");
-	// }
+		// Find current scope (function/class we're in)
+		const currentScope = astPath.find(
+			(node) =>
+				node.type === "function_definition" || node.type === "class_definition"
+		);
 
-	// Extract clean prefix/suffix with filtering
-	// private extractCleanCursorContext(
-	// 	ast: any, 
-	// 	text: string, 
-	// 	byteOffset: number, 
-	// 	position: vscode.Position
-	// ): { prefix: string; suffix: string } {
-	// 	const lines = text.split("\n");
-	// 	const CONTEXT_WINDOW = 5;
-	// 	const startLine = Math.max(0, position.line - CONTEXT_WINDOW);
-	// 	const endLine = Math.min(lines.length - 1, position.line + CONTEXT_WINDOW);
-		
-	// 	const prefixLines = lines.slice(startLine, position.line + 1);
-	// 	const suffixLines = lines.slice(position.line + 1, endLine + 1);
-		
-	// 	if (prefixLines.length > 0) {
-	// 		prefixLines[prefixLines.length - 1] = prefixLines[prefixLines.length - 1]
-	// 			.substring(0, position.character);
-	// 	}
-		
-	// 	return {
-	// 		prefix: this.filterCodeLines(prefixLines).join("\n").trim(),
-	// 		suffix: this.filterCodeLines(suffixLines).join("\n").trim()
-	// 	};
-	// }
+		// Get relevant imports and top-level definitions
+		const moduleContext = await this.extractModuleContext(
+			ast,
+			document.uri.fsPath
+		);
 
-	// Smart filter to keep relevant code lines and skip noise
-	// private filterCodeLines(lines: string[]): string[] {
-	// 	return lines.filter(line => {
-	// 		const trimmed = line.trim();
-	// 		if (!trimmed) return false;
-	// 		if (trimmed.startsWith("#")) return false;
-	// 		if (trimmed.startsWith('"""') || trimmed.startsWith("'''")) return false;
-	// 		if (trimmed.startsWith("@")) return false;
-	// 		if (trimmed.startsWith("import ") || trimmed.startsWith("from ")) return false;
-	// 		if (trimmed.startsWith("def ") || trimmed.startsWith("class ")) return false;
-	// 		return true;
-	// 	});
-	// }
+		// Get current scope context if we're inside a function/class
+		const scopeContext = currentScope
+			? await this.extractCurrentScopeContext(currentScope, document.uri.fsPath)
+			: "";
+
+		// Extract clean prefix/suffix around cursor without duplication
+		const { prefix, suffix } = this.extractCleanCursorContext(
+			ast,
+			text,
+			byteOffset,
+			position
+		);
+		return {
+			prefix,
+			suffix,
+			context: moduleContext + (scopeContext ? "\n\n" + scopeContext : ""),
+		};
+	}
+
+	private async extractModuleContext(
+		ast: any,
+		filepath: string
+	): Promise<string> {
+		const snippets = await getContextForPath(filepath, [ast.rootNode]);
+		const moduleSnippets = snippets.filter(
+			(s) =>
+				s.scopeLevel === "module" &&
+				(s.symbolType === "import" ||
+					s.symbolType === "function" ||
+					s.symbolType === "class")
+		);
+
+		return moduleSnippets.map((s) => s.content).join("\n");
+	}
+
+	private async extractCurrentScopeContext(
+		scopeNode: any,
+		filepath: string
+	): Promise<string> {
+		const snippets = await getContextForPath(filepath, [scopeNode]);
+		const scopeSnippets = snippets.filter(
+			(s) =>
+				s.scopeLevel === "current" &&
+				(s.symbolType === "function" || s.symbolType === "class")
+		);
+
+		return scopeSnippets.map((s) => s.content).join("\n");
+	}
+
+	private extractCleanCursorContext(
+		ast: any,
+		text: string,
+		byteOffset: number,
+		position: vscode.Position
+	): { prefix: string; suffix: string } {
+		const lines = text.split("\n");
+		const currentLineIndex = position.line;
+		const currentColumnIndex = position.character;
+
+		// Get a small window around the cursor for immediate context
+		const CONTEXT_WINDOW = 5; // lines before/after
+
+		const startLine = Math.max(0, currentLineIndex - CONTEXT_WINDOW);
+		const endLine = Math.min(
+			lines.length - 1,
+			currentLineIndex + CONTEXT_WINDOW
+		);
+
+		// Extract lines and clean them
+		const prefixLines = lines.slice(startLine, currentLineIndex + 1);
+		const suffixLines = lines.slice(currentLineIndex + 1, endLine + 1);
+
+		// For the current line, split at cursor position
+		if (prefixLines.length > 0) {
+			const currentLine = prefixLines[prefixLines.length - 1];
+			prefixLines[prefixLines.length - 1] = currentLine.substring(
+				0,
+				currentColumnIndex
+			);
+		}
+
+		// Filter to keep only the most relevant executable content
+		const cleanPrefixLines = this.filterForCursorContext(prefixLines);
+		const cleanSuffixLines = this.filterForCursorContext(suffixLines);
+
+		return {
+			prefix: cleanPrefixLines.join("\n").trim(),
+			suffix: cleanSuffixLines.join("\n").trim(),
+		};
+	}
+
+	private filterForCursorContext(lines: string[]): string[] {
+		return lines.filter((line) => {
+			const trimmed = line.trim();
+
+			// Skip empty lines
+			if (trimmed === "") return false;
+
+			// Skip pure comment lines (keep inline comments)
+			if (trimmed.startsWith("#")) return false;
+
+			// Skip docstring lines
+			if (trimmed.startsWith('"""') || trimmed.startsWith("'''")) return false;
+
+			// Skip decorator lines
+			if (trimmed.startsWith("@")) return false;
+
+			// Skip imports (already in module context)
+			if (trimmed.startsWith("import ") || trimmed.startsWith("from "))
+				return false;
+
+			// Skip function/class definitions (already in module/scope context)
+			if (trimmed.startsWith("def ") || trimmed.startsWith("class "))
+				return false;
+
+			// Keep everything else: assignments, calls, control flow, partial statements
+			return true;
+		});
+	}
+
+	private filterExecutableLines(lines: string[]): string[] {
+		return this.filterForCursorContext(lines);
+	}
 }

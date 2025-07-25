@@ -1,11 +1,16 @@
 "use strict";
+/**
+ * CONTEXT FORMATTING UTILITIES (Currently Unused)
+ *
+ * This file provides sophisticated context prioritization and formatting
+ * for AST-based context extraction. Currently inactive but preserved.
+ *
+ * Features: Scope-based prioritization, relevance filtering, LLM-optimized formatting
+ */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.prioritizeSnippets = prioritizeSnippets;
 exports.formatSnippetsAsContext = formatSnippetsAsContext;
 exports.buildScopeAwareContext = buildScopeAwareContext;
-/**
- * Utility functions for formatting context snippets for LLM prompts
- */
 /**
  * Prioritize snippets based on scope hierarchy and symbol type, filtering for relevance
  */

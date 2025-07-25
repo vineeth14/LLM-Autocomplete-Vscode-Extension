@@ -1,4 +1,12 @@
 "use strict";
+/**
+ * AST-BASED CONTEXT EXTRACTION (Currently Unused)
+ *
+ * This file provides Tree-sitter based Python AST parsing for intelligent
+ * context extraction. It's preserved for future use but currently inactive.
+ *
+ * To enable: Uncomment imports in service.ts and use getScopedASTContext()
+ */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAst = getAst;
 exports.getTreePathAtCursor = getTreePathAtCursor;
