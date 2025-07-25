@@ -18,6 +18,7 @@ export class LLMInlineCompletionProvider {
   private currentGenerator: any = null;
   private previousGeneratorPrefix: string | null = null;
   private previousCompletion: string = "";
+  private cache = new CompletionCache();
 
   private shouldReuseExistingGenerator(prefix: string): boolean {
     if (!this.currentGenerator || !this.previousGeneratorPrefix) {
@@ -25,14 +26,13 @@ export class LLMInlineCompletionProvider {
     }
     // User backspaced
     if (this.previousGeneratorPrefix.length > prefix.length) {
-      log.appendLine(`[Reuse] User backspaced`);
       return false;
     }
-    const generatedSoFar = this.previousGeneratorPrefix + this.previousCompletion;
-    const canReuse = generatedSoFar.startsWith(prefix);
-    log.appendLine(`[Reuse] ${canReuse ? 'Reusing' : 'New'} - "${generatedSoFar}" vs "${prefix}"`);
-    return canReuse;
+    const generatedSoFar =
+      this.previousGeneratorPrefix + this.previousCompletion;
+    return generatedSoFar.startsWith(prefix);
   }
+
   async provideInlineCompletionItems(
     document: TextDocument,
     position: Position,
@@ -40,23 +40,20 @@ export class LLMInlineCompletionProvider {
     token: CancellationToken,
   ): Promise<InlineCompletionItem[]> {
     try {
-      // const now = Date.now();
-      // if (now - this.lastTriggerTime < this.debounceMs) {
-      // 	log.appendLine(
-      // 		`[LLMInlineCompletionProvider] Debounced (${
-      // 			now - this.lastTriggerTime
-      // 		}ms < ${this.debounceMs}ms)`
-      // 	);
-      // 	return [];
-      // }
-      // this.lastTriggerTime = now;
-
       const currentPrefix = document
         .lineAt(position)
         .text.substring(0, position.character);
 
-      log.appendLine(`[Main] Checking reuse for prefix: "${currentPrefix}"`);
+      const cached = this.cache.get(currentPrefix);
+      if (cached) {
+        log.appendLine(`[Cache] Hit`);
+        return [
+          new InlineCompletionItem(cached, new Range(position, position)),
+        ];
+      }
+
       if (this.shouldReuseExistingGenerator(currentPrefix)) {
+        log.appendLine(`[Reuse] Generator reused`);
         const remainingCompletion = this.previousCompletion.substring(
           currentPrefix.length - this.previousGeneratorPrefix!.length,
         );
@@ -92,8 +89,9 @@ export class LLMInlineCompletionProvider {
 
       this.currentGenerator = getSuggestion(context, token);
       const suggestion = await this.currentGenerator;
-
+      
       if (!suggestion) {
+        this.currentGenerator = null; // Clear failed generator
         return [];
       }
 
@@ -101,8 +99,16 @@ export class LLMInlineCompletionProvider {
       this.previousCompletion = suggestion.trim();
 
       if (!this.previousCompletion) {
+        this.currentGenerator = null; // Clear empty generator
         return [];
       }
+
+      // Only cache valid completions
+      this.cache.put(currentPrefix, this.previousCompletion);
+      log.appendLine(`[New] LLM completion cached`);
+      
+      // Clear generator after successful completion
+      this.currentGenerator = null;
 
       const item = new InlineCompletionItem(
         this.previousCompletion,
@@ -110,9 +116,11 @@ export class LLMInlineCompletionProvider {
       );
       return [item];
     } catch (err: any) {
+      // Clear all generator state on error
       this.currentGenerator = null;
       this.previousGeneratorPrefix = null;
       this.previousCompletion = "";
+      
       if (
         err?.name !== "AbortError" &&
         !(token && token.isCancellationRequested)
