@@ -1,4 +1,4 @@
-class CompletionCache {
+export class CompletionCache {
   private cache = new Map<string, { completion: string; timestamp: number }>();
   private maxSize = 100;
 

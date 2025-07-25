@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.systemPrompt = void 0;
-const extension_1 = require("../extension");
+// StarCoder FIM template (for reference)
 const starcoderFimTemplate = {
     template: "<fim_prefix>{{{prefix}}}<fim_suffix>{{{suffix}}}<fim_middle>",
     completionOptions: {
@@ -12,6 +12,16 @@ const starcoderFimTemplate = {
         stop: ["<fim_prefix>", "<fim_suffix>", "<fim_middle>", "\n\n"],
     },
 };
+//const qwenFimTemplate: AutocompleteTemplate = {
+// template: "<|fim_prefix|>{{{prefix}}}<|fim_suffix|>{{{suffix}}}<|fim_middle|>",
+// completionOptions: {
+// 	temperature: 0.3,
+// 	top_p: 0.95,
+// 	num_predict: 30,
+// 	repeat_penalty: 1.1,
+// 	stop: ["<|fim_prefix|>", "<|fim_suffix|>", "<|fim_middle|>", "<|endoftext|>", "\n\n"],
+// },
+// }//;
 const systemPrompt = (parameters) => {
     const prefix = parameters?.prefix || "";
     const suffix = parameters?.suffix || "";
@@ -21,11 +31,12 @@ const systemPrompt = (parameters) => {
     const prompt = starcoderFimTemplate.template
         .replace("{{{prefix}}}", cleanPrefix)
         .replace("{{{suffix}}}", cleanSuffix);
-    extension_1.log.appendLine("=== SIMPLE PROMPT ===");
-    extension_1.log.appendLine(`Prefix: ${cleanPrefix}`);
-    extension_1.log.appendLine(`Suffix: ${cleanSuffix}`);
-    extension_1.log.appendLine(`Full prompt: ${prompt}`);
-    extension_1.log.appendLine("=====================");
+    // Reduced logging - only log when needed for debugging
+    // log.appendLine("=== StarCoder PROMPT ===");
+    // log.appendLine(`Prefix: ${cleanPrefix}`);
+    // log.appendLine(`Suffix: ${cleanSuffix}`);
+    // log.appendLine(`Full prompt: ${prompt}`);
+    // log.appendLine("===================");
     return {
         content: prompt,
         options: starcoderFimTemplate.completionOptions,

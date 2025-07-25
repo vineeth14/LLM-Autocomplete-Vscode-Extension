@@ -2,125 +2,174 @@ import { CancellationToken } from "vscode";
 import { systemPrompt } from "./prompt";
 import { Parameters, OllamaResponse, CompletionOptions } from "./types";
 import { log } from "../extension";
+import { Agent } from "http";
 
 const ollamaUrl = "http://localhost:11434";
 const modelName = "starcoder:3b";
 
-async function callOllama(
-	prompt: string,
-	options?: CompletionOptions,
-	token?: CancellationToken
-): Promise<string> {
-	const controller = new AbortController();
-	const signal = controller.signal;
-	const timeoutId = setTimeout(() => controller.abort(), 5000);
+// HTTP Agent for connection reuse - optimized for starcoder:3b
+const httpAgent = new Agent({
+  keepAlive: true,
+  maxSockets: 2,
+  maxFreeSockets: 1,
+  timeout: 3000,
+});
 
-	const cancellationListener = token?.onCancellationRequested
-		? token.onCancellationRequested(() => {
-				controller.abort();
-		  })
-		: { dispose: () => {} };
-	try {
-		const response = await fetch(`${ollamaUrl}/api/generate`, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify({
-				model: modelName,
-				prompt: prompt,
-				stream: false,
-				options: options || {
-					temperature: 0.1,
-					top_p: 0.9,
-					num_predict: 20,
-					repeat_penalty: 1.1,
-					stop: ["<|endoftext|>"],
-				},
-			}),
-			signal: signal,
-		});
-		if (!response.ok) {
-			throw new Error(
-				`Ollama API error: ${response.status} ${response.statusText}`
-			);
-		}
-		const data = await response.json();
-		if (
-			typeof data === "object" &&
-			data !== null &&
-			"response" in data &&
-			"done" in data
-		) {
-			const ollamaResponse = data as OllamaResponse;
-			return ollamaResponse.response;
-		} else {
-			throw new Error("Invalid response format from Ollama API");
-		}
-	} finally {
-		clearTimeout(timeoutId);
-		cancellationListener.dispose();
-	}
+async function callOllama(
+  prompt: string,
+  options?: CompletionOptions,
+  token?: CancellationToken,
+): Promise<string> {
+  const controller = new AbortController();
+  // const signal = controller.signal;
+  // const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+  //  const cancellationListener = token?.onCancellationRequested
+  //    ? token.onCancellationRequested(() => {
+  //        controller.abort();
+  //      })
+  //    : { dispose: () => {} };
+  try {
+    const jsonStart = performance.now();
+    const requestBody = JSON.stringify({
+      model: modelName,
+      prompt: prompt,
+      stream: false,
+      keep_alive: "10m",
+      options: options || {
+        temperature: 0.1,
+        top_p: 0.3,
+        num_predict: 12,
+        repeat_penalty: 1.1,
+        stop: [
+          "<fim_prefix>",
+          "<fim_suffix>",
+          "<fim_middle>",
+          "\n\n",
+          "\n\ndef ",
+          "\n\nclass ",
+          "\n\nif ",
+        ],
+      },
+    });
+    const jsonEnd = performance.now();
+
+    const fetchStart = performance.now();
+    const response = await fetch(`${ollamaUrl}/api/generate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Connection: "keep-alive",
+      },
+      body: requestBody,
+      // signal: signal,
+      // @ts-ignore - TypeScript doesn't recognize agent in fetch
+      agent: httpAgent,
+    });
+    const fetchEnd = performance.now();
+
+    log.appendLine(
+      `[HTTP] JSON serialize: ${(jsonEnd - jsonStart).toFixed(1)}ms | Fetch: ${(fetchEnd - fetchStart).toFixed(1)}ms`,
+    );
+    if (!response.ok) {
+      throw new Error(
+        `Ollama API error: ${response.status} ${response.statusText}`,
+      );
+    }
+    const parseStart = performance.now();
+    const data = await response.json();
+    const parseEnd = performance.now();
+    log.appendLine(
+      `[HTTP] JSON parse: ${(parseEnd - parseStart).toFixed(1)}ms`,
+    );
+    if (
+      typeof data === "object" &&
+      data !== null &&
+      "response" in data &&
+      "done" in data
+    ) {
+      const ollamaResponse = data as OllamaResponse;
+      return ollamaResponse.response;
+    } else {
+      throw new Error("Invalid response format from Ollama API");
+    }
+  } finally {
+    //clearTimeout(timeoutId);
+    //cancellationListener.dispose();
+  }
 }
 
 export async function getSuggestion(
-	parameters: Parameters,
-	token?: CancellationToken
+  parameters: Parameters,
+  token?: CancellationToken,
 ): Promise<string | undefined> {
-	try {
-		const promptObj = systemPrompt(parameters);
+  const startTime = performance.now();
+  try {
+    const promptObj = systemPrompt(parameters);
 
-		const rawSuggestion = await callOllama(
-			promptObj.content,
-			promptObj.options,
-			token
-		);
+    const rawSuggestion = await callOllama(
+      promptObj.content,
+      promptObj.options,
+      token,
+    );
 
-		// Just clean up basic tokens and return the suggestion
-		let suggestion = rawSuggestion
-			.replace(/<\|fim_[^|]*\|>/g, "") // Remove FIM tokens
-			.replace(/<\|[^|]*\|>/g, "") // Remove any other special tokens
-			.trim();
+    // Clean up StarCoder FIM tokens and other special tokens
+    const cleanStart = performance.now();
+    let suggestion = rawSuggestion
+      .replace(/<fim_prefix>/g, "")
+      .replace(/<fim_suffix>/g, "")
+      .replace(/<fim_middle>/g, "")
+      .replace(/<\|[^|]*\|>/g, "") // Remove any other special tokens
+      .trim();
 
-		// Filter out conversational responses that start with explanatory text
-		if (
-			suggestion.toLowerCase().startsWith("it looks like") ||
-			suggestion.toLowerCase().startsWith("however") ||
-			suggestion.toLowerCase().startsWith("here's") ||
-			suggestion.includes("issues with your code") ||
-			suggestion.includes("corrected version")
-		) {
-			return undefined;
-		}
+    const cleanEnd = performance.now();
+    log.appendLine(
+      `[Processing] String cleanup: ${(cleanEnd - cleanStart).toFixed(1)}ms`,
+    );
 
-		if (!suggestion || suggestion.trim().length === 0) {
-			return undefined;
-		}
+    // Filter out conversational responses that start with explanatory text
+    if (
+      suggestion.toLowerCase().startsWith("it looks like") ||
+      suggestion.toLowerCase().startsWith("however") ||
+      suggestion.toLowerCase().startsWith("here's") ||
+      suggestion.includes("issues with your code") ||
+      suggestion.includes("corrected version")
+    ) {
+      return undefined;
+    }
 
-		return suggestion;
-	} catch (err: any) {
-		if (
-			err?.name === "AbortError" ||
-			(token && token.isCancellationRequested)
-		) {
-			return undefined;
-		}
-		log.appendLine(`[getSuggestion] Error: ${err?.message || err}`);
-		return undefined;
-	}
+    if (!suggestion || suggestion.trim().length === 0) {
+      return undefined;
+    }
+
+    const endTime = performance.now();
+    const duration = endTime - startTime;
+    log.appendLine(`[Performance] Suggestion took ${duration.toFixed(1)}ms`);
+
+    return suggestion;
+  } catch (err: any) {
+    if (
+      err?.name === "AbortError" ||
+      (token && token.isCancellationRequested)
+    ) {
+      return undefined;
+    }
+    log.appendLine(`[getSuggestion] Error: ${err?.message || err}`);
+    return undefined;
+  }
 }
 
 function isValidCodeCompletion(response: string): boolean {
-	const invalidPhrases = [
-		"it looks like",
-		"however",
-		"here's a",
-		"let me",
-		"you're trying to",
-		"i can help",
-		"the issue is",
-	];
-	return !invalidPhrases.some((phrase) =>
-		response.toLowerCase().includes(phrase)
-	);
+  const invalidPhrases = [
+    "it looks like",
+    "however",
+    "here's a",
+    "let me",
+    "you're trying to",
+    "i can help",
+    "the issue is",
+  ];
+  return !invalidPhrases.some((phrase) =>
+    response.toLowerCase().includes(phrase),
+  );
 }

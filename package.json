@@ -14,7 +14,14 @@
 	],
 	"main": "./client/out/extension",
 	"contributes": {
-		"configuration": {}
+		"configuration": {},
+		"commands": [
+			{
+				"command": "llm-autocomplete.runLatencyTests",
+				"title": "Run Latency Tests",
+				"category": "LLM Autocomplete"
+			}
+		]
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",

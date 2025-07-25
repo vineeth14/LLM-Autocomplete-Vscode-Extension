@@ -5,15 +5,16 @@ const vscode_1 = require("vscode");
 const suggestion_1 = require("./suggestion");
 const service_1 = require("./context/service");
 const extension_1 = require("../extension");
+const cache_1 = require("./context/cache");
 class LLMInlineCompletionProvider {
     constructor() {
         this.lastTriggerTime = 0;
-        this.debounceMs = 0;
+        this.debounceMs = 100;
         this.contextRetrievalService = new service_1.ContextRetrievalService();
         this.currentGenerator = null;
         this.previousGeneratorPrefix = null;
         this.previousCompletion = "";
-        this.cache = new CompletionCache();
+        this.cache = new cache_1.CompletionCache();
     }
     shouldReuseExistingGenerator(prefix) {
         if (!this.currentGenerator || !this.previousGeneratorPrefix) {
@@ -27,19 +28,26 @@ class LLMInlineCompletionProvider {
         return generatedSoFar.startsWith(prefix);
     }
     async provideInlineCompletionItems(document, position, inlineContext, token) {
+        const totalStart = performance.now();
         try {
+            // Debouncing check
+            const now = Date.now();
+            if (now - this.lastTriggerTime < this.debounceMs) {
+                return [];
+            }
+            this.lastTriggerTime = now;
             const currentPrefix = document
                 .lineAt(position)
                 .text.substring(0, position.character);
-            const cached = this.cache.get(currentPrefix);
+            // Create unique cache key with file position to avoid wrong cache hits
+            const cacheKey = `${currentPrefix}:${document.offsetAt(position)}`;
+            const cached = this.cache.get(cacheKey);
             if (cached) {
-                extension_1.log.appendLine(`[Cache] Hit`);
                 return [
                     new vscode_1.InlineCompletionItem(cached, new vscode_1.Range(position, position)),
                 ];
             }
             if (this.shouldReuseExistingGenerator(currentPrefix)) {
-                extension_1.log.appendLine(`[Reuse] Generator reused`);
                 const remainingCompletion = this.previousCompletion.substring(currentPrefix.length - this.previousGeneratorPrefix.length);
                 if (remainingCompletion) {
                     return [
@@ -55,13 +63,17 @@ class LLMInlineCompletionProvider {
             }
             // Start new generator
             this.previousGeneratorPrefix = currentPrefix;
+            const contextStart = performance.now();
             const context = await this.contextRetrievalService.getContextForCompletion(document, position);
+            const contextEnd = performance.now();
             // If context service returns empty context, skip completion
             if (!context.prefix && !context.suffix) {
                 return [];
             }
+            const suggestionStart = performance.now();
             this.currentGenerator = (0, suggestion_1.getSuggestion)(context, token);
             const suggestion = await this.currentGenerator;
+            const suggestionEnd = performance.now();
             if (!suggestion) {
                 this.currentGenerator = null; // Clear failed generator
                 return [];
@@ -72,12 +84,21 @@ class LLMInlineCompletionProvider {
                 this.currentGenerator = null; // Clear empty generator
                 return [];
             }
-            // Only cache valid completions
-            this.cache.put(currentPrefix, this.previousCompletion);
-            extension_1.log.appendLine(`[New] LLM completion cached`);
+            // Log completion stats (safe for JSON-RPC)
+            const lineCount = this.previousCompletion.split('\n').length;
+            const charCount = this.previousCompletion.length;
+            extension_1.log.appendLine(`[Completion] ${lineCount} lines, ${charCount} chars`);
+            // Only cache valid completions with unique key
+            this.cache.put(cacheKey, this.previousCompletion);
             // Clear generator after successful completion
             this.currentGenerator = null;
             const item = new vscode_1.InlineCompletionItem(this.previousCompletion, new vscode_1.Range(position, position));
+            const totalEnd = performance.now();
+            // Simple bottleneck analysis
+            const contextTime = contextEnd - contextStart;
+            const suggestionTime = suggestionEnd - suggestionStart;
+            const totalTime = totalEnd - totalStart;
+            extension_1.log.appendLine(`[Bottleneck] Total: ${totalTime.toFixed(0)}ms | Context: ${contextTime.toFixed(0)}ms | LLM: ${suggestionTime.toFixed(0)}ms`);
             return [item];
         }
         catch (err) {

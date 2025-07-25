@@ -1,3 +1,6 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.CompletionCache = void 0;
 class CompletionCache {
     constructor() {
         this.cache = new Map();
@@ -33,4 +36,5 @@ class CompletionCache {
         return oldestKey;
     }
 }
+exports.CompletionCache = CompletionCache;
 //# sourceMappingURL=cache.js.map

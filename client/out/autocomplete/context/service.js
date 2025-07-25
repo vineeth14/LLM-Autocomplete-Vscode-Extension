@@ -4,6 +4,9 @@ exports.ContextRetrievalService = void 0;
 const ast_1 = require("./ast");
 const extension_1 = require("../../extension");
 class ContextRetrievalService {
+    constructor() {
+        this.importCache = new Map();
+    }
     /**
      * Get context for LLM completion using simple cursor-based approach
      * @param document - The current document
@@ -11,9 +14,9 @@ class ContextRetrievalService {
      * @returns Clean cursor-based context formatted for LLM prompt
      */
     async getContextForCompletion(document, position) {
-        return this.getSimpleCursorContext(document, position);
+        return await this.getSimpleCursorContext(document, position);
     }
-    getSimpleCursorContext(document, position) {
+    async getSimpleCursorContext(document, position) {
         const text = document.getText();
         const lines = text.split("\n");
         const currentLine = position.line;
@@ -23,14 +26,21 @@ class ContextRetrievalService {
         const startLine = Math.max(0, currentLine - contextBefore);
         const endLine = Math.min(lines.length - 1, currentLine + contextAfter);
         const prefixLines = lines.slice(startLine, currentLine);
-        const currentLinePrefix = lines[currentLine]?.substring(0, currentChar) || "";
-        const allPrefixLines = [...prefixLines, currentLinePrefix];
-        const prefix = allPrefixLines.join("\n");
-        const currentLineSuffix = lines[currentLine]?.substring(currentChar) || "";
         const suffixLines = lines.slice(currentLine + 1, endLine + 1);
+        const currentLinePrefix = lines[currentLine]?.substring(0, currentChar) || "";
+        const currentLineSuffix = lines[currentLine]?.substring(currentChar) || "";
+        const imports = currentLine > 10 ? await this.getImportsForDocument(document) : [];
+        const cleanPrefixLines = prefixLines.filter((line) => {
+            const trimmed = line.trim();
+            return !trimmed.startsWith("import ") && !trimmed.startsWith("from ");
+        });
+        const contextLines = imports.length > 0
+            ? [...imports, "", ...cleanPrefixLines]
+            : cleanPrefixLines;
+        const allPrefixLines = [...contextLines, currentLinePrefix];
+        const prefix = allPrefixLines.join("\n");
         const allSuffixLines = [currentLineSuffix, ...suffixLines];
         const suffix = allSuffixLines.join("\n");
-        // Enhanced position information
         const cursorOffset = document.offsetAt(position);
         const currentLineText = lines[currentLine] || "";
         const isAtEndOfLine = currentChar === currentLineText.length;
@@ -41,6 +51,62 @@ class ContextRetrievalService {
             isAtEndOfLine: isAtEndOfLine,
             currentLineText: currentLineText,
         };
+    }
+    getImportHash(text) {
+        const importSection = text.substring(0, Math.min(1000, text.length));
+        const crypto = require("crypto");
+        return crypto.createHash("md5").update(importSection).digest("hex");
+    }
+    async extractImportsFromAST(ast) {
+        const imports = [];
+        for (const child of ast.rootNode.namedChildren) {
+            if (child.type === "import_statement" ||
+                child.type === "import_from_statement") {
+                imports.push(child.text);
+            }
+            else if (child.type !== "comment") {
+                break;
+            }
+        }
+        return imports;
+    }
+    async getImportsForDocument(document) {
+        if (document.languageId !== "python") {
+            return [];
+        }
+        const text = document.getText();
+        const cacheKey = document.uri.toString() + ":" + this.getImportHash(text);
+        const cached = this.importCache.get(cacheKey);
+        if (cached) {
+            return cached;
+        }
+        try {
+            const ast = await (0, ast_1.getAst)(text);
+            if (ast) {
+                const imports = await this.extractImportsFromAST(ast);
+                this.importCache.set(cacheKey, imports);
+                return imports;
+            }
+        }
+        catch (error) {
+            const imports = this.extractImportsSimple(text);
+            this.importCache.set(cacheKey, imports);
+        }
+        return [];
+    }
+    extractImportsSimple(text) {
+        const lines = text.split("\n");
+        const imports = [];
+        for (let i = 0; i < Math.min(15, lines.length); i++) {
+            const line = lines[i].trim();
+            if (line.startsWith("import") || line.startsWith("from")) {
+                imports.push(lines[i]);
+            }
+            else if (line && !line.startsWith("#")) {
+                break;
+            }
+        }
+        return imports;
     }
     // ===== UNUSED CODE - AST-BASED CONTEXT METHODS =====
     // The following methods are currently unused as the extension uses simple cursor-based context
