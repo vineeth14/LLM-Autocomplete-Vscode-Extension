@@ -13,7 +13,10 @@
 		"vscode": "^1.75.0"
 	},
 	"dependencies": {
-		"vscode-languageclient": "^8.1.0"
+		"vscode-languageclient": "^8.1.0",
+		"web-tree-sitter": "^0.21.0",
+		"tree-sitter-python": "^0.21.0",
+		"tree-sitter-wasms": "^0.1.11"
 	},
 	"devDependencies": {
 		"@types/vscode": "^1.81.0"

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.log = void 0;
+exports.astLog = exports.log = void 0;
 exports.activate = activate;
 exports.deactivate = deactivate;
 const path = require("path");
@@ -8,9 +8,11 @@ const vscode = require("vscode");
 const vscode_1 = require("vscode");
 const node_1 = require("vscode-languageclient/node");
 const LLMInlineCompletionProvider_1 = require("./autocomplete/LLMInlineCompletionProvider");
+const latency_test_1 = require("./autocomplete/latency-test");
 let client;
 // Global debug -> print to extension host output channel
 exports.log = vscode.window.createOutputChannel("LLM Tab Complete");
+exports.astLog = vscode.window.createOutputChannel("AST Testing");
 function activate(context) {
     exports.log.appendLine("Extension activated");
     // log.show();
@@ -41,6 +43,9 @@ function activate(context) {
     const provider = new LLMInlineCompletionProvider_1.LLMInlineCompletionProvider();
     const disposable = vscode_1.languages.registerInlineCompletionItemProvider({ pattern: "**" }, provider);
     context.subscriptions.push(disposable);
+    // Register latency test command
+    const testCommand = vscode.commands.registerCommand('llm-autocomplete.runLatencyTests', latency_test_1.runLatencyTests);
+    context.subscriptions.push(testCommand);
 }
 function deactivate() {
     if (!client) {

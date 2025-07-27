@@ -10,11 +10,13 @@ import {
 } from "vscode-languageclient/node";
 
 import { LLMInlineCompletionProvider } from "./autocomplete/LLMInlineCompletionProvider";
+import { runLatencyTests } from "./autocomplete/latency-test";
 
 let client: LanguageClient;
 
 // Global debug -> print to extension host output channel
 export const log = vscode.window.createOutputChannel("LLM Tab Complete");
+export const astLog = vscode.window.createOutputChannel("AST Testing");
 
 export function activate(context: ExtensionContext) {
 	log.appendLine("Extension activated");
@@ -62,6 +64,10 @@ export function activate(context: ExtensionContext) {
 		provider
 	);
 	context.subscriptions.push(disposable);
+
+	// Register latency test command
+	const testCommand = vscode.commands.registerCommand('llm-autocomplete.runLatencyTests', runLatencyTests);
+	context.subscriptions.push(testCommand);
 }
 
 export function deactivate(): Thenable<void> | undefined {

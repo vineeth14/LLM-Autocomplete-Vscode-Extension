@@ -14,16 +14,27 @@
 	],
 	"main": "./client/out/extension",
 	"contributes": {
-		"configuration": {}
+		"configuration": {},
+		"commands": [
+			{
+				"command": "llm-autocomplete.runLatencyTests",
+				"title": "Run Latency Tests",
+				"category": "LLM Autocomplete"
+			}
+		]
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
-		"compile": "tsc -b",
+		"compile": "tsc -b && npm run copy-queries",
+		"copy-queries": "mkdir -p client/out/autocomplete/context/languages/python/queries && cp client/src/autocomplete/context/languages/python/queries/*.scm client/out/autocomplete/context/languages/python/queries/",
 		"watch": "tsc -b -w",
 		"postinstall": "cd client && npm install && cd ../server && npm install && cd .."
 	},
 	"devDependencies": {
 		"@types/node": "^20.5.7",
 		"typescript": "^5.2.2"
+	},
+	"dependencies": {
+		"tree-sitter-python": "^0.23.6"
 	}
 }

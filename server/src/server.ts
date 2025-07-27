@@ -1,8 +1,5 @@
 import log from "./log";
-
 import { initialize } from "./methods/initialize";
-import { completion } from "./methods/textDocument/completion";
-import { didChange } from "./methods/textDocument/didChange";
 
 interface Message {
 	jsonrpc: string;
@@ -19,7 +16,7 @@ export interface RequestMessage extends NotificationMessage {
 
 type RequestMethod = (
 	message: RequestMessage
-) => ReturnType<typeof initialize> | ReturnType<typeof completion>;
+) => ReturnType<typeof initialize>;
 
 type NotificationMethod = (message: NotificationMessage) => void;
 const methodLookup: Record<string, RequestMethod | NotificationMethod> = {
@@ -67,3 +64,17 @@ process.stdin.on("data", (chunk) => {
 		buffer = buffer.slice(messageStart + contentLength);
 	}
 });
+
+// ===== UNUSED CODE - LEGACY LSP COMPLETION METHODS =====
+// The following imports and method references are unused as the extension
+// uses inline completion via Ollama instead of LSP completion
+
+// import { completion } from "./methods/textDocument/completion";
+// import { didChange } from "./methods/textDocument/didChange";
+
+// The completion method would be added to methodLookup if LSP completion was used:
+// const methodLookup: Record<string, RequestMethod | NotificationMethod> = {
+//   initialize,
+//   "textDocument/completion": completion,
+//   "textDocument/didChange": didChange,
+// };
