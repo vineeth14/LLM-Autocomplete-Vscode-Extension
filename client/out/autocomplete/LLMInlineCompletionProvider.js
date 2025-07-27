@@ -78,12 +78,7 @@ class LLMInlineCompletionProvider {
                 this.currentGenerator = null; // Clear failed generator
                 return [];
             }
-            // Clean the suggestion - remove any unwanted tokens
-            this.previousCompletion = suggestion.trim();
-            if (!this.previousCompletion) {
-                this.currentGenerator = null; // Clear empty generator
-                return [];
-            }
+            this.previousCompletion = suggestion;
             // Log completion stats (safe for JSON-RPC)
             const lineCount = this.previousCompletion.split('\n').length;
             const charCount = this.previousCompletion.length;

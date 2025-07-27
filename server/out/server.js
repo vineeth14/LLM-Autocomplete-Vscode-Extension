@@ -26,7 +26,16 @@ process.stdin.on("data", (chunk) => {
         if (buffer.length < messageStart + contentLength)
             break;
         const rawMessage = buffer.slice(messageStart, messageStart + contentLength);
-        const message = JSON.parse(rawMessage);
+        let message;
+        try {
+            message = JSON.parse(rawMessage);
+        }
+        catch (error) {
+            log_1.default.write(`JSON Parse Error: ${error}. Raw message: "${rawMessage}"`);
+            // Skip this malformed message and continue
+            buffer = buffer.slice(messageStart + contentLength);
+            continue;
+        }
         log_1.default.write({
             id: message.id,
             method: message.method,
@@ -36,6 +45,14 @@ process.stdin.on("data", (chunk) => {
             const result = method(message);
             if (result !== undefined) {
                 respond(message.id, result);
+            }
+        }
+        else {
+            // Log unhandled methods but don't crash
+            log_1.default.write(`Unhandled LSP method: ${message.method}`);
+            // For requests (with id), send empty response to avoid client hanging
+            if (message.id !== undefined) {
+                respond(message.id, null);
             }
         }
         //Remove processed message from buffer

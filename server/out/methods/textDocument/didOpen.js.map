@@ -1,0 +1,1 @@
+{"version":3,"file":"didOpen.js","sourceRoot":"","sources":["../../../src/methods/textDocument/didOpen.ts"],"names":[],"mappings":";;;AACA,+CAA8D;AAMvD,MAAM,OAAO,GAAG,CAAC,OAA4B,EAAQ,EAAE;IAC7D,MAAM,MAAM,GAAG,OAAO,CAAC,MAAmC,CAAC;IAC3D,qBAAS,CAAC,GAAG,CAAC,MAAM,CAAC,YAAY,CAAC,GAAG,EAAE,MAAM,CAAC,YAAY,CAAC,IAAI,CAAC,CAAC;AAClE,CAAC,CAAC;AAHW,QAAA,OAAO,WAGlB"}

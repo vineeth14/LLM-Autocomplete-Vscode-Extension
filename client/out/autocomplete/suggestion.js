@@ -4,15 +4,58 @@ exports.getSuggestion = getSuggestion;
 const prompt_1 = require("./prompt");
 const extension_1 = require("../extension");
 const http_1 = require("http");
-const ollamaUrl = "http://localhost:11434";
-const modelName = "starcoder:3b";
+const dotenv = require("dotenv");
+const path = require("path");
+const suggestion_filter_1 = require("./filters/suggestion-filter");
+// Load environment variables from .env file
+dotenv.config({ path: path.join(__dirname, "../../.env") });
+const DEFAULT_PROVIDER = process.env.LLM_PROVIDER || "ollama";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GOOGLE_CLOUD_PROJECT = process.env.GOOGLE_CLOUD_PROJECT;
+const GOOGLE_CLOUD_LOCATION = process.env.GOOGLE_CLOUD_LOCATION || "us-central1";
+const ollamaUrl = process.env.OLLAMA_URL || "http://localhost:11434";
+const modelName = process.env.OLLAMA_MODEL || "starcoder:3b";
+const geminiModel = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
 // HTTP Agent for connection reuse - optimized for starcoder:3b
 const httpAgent = new http_1.Agent({
     keepAlive: true,
-    maxSockets: 2,
-    maxFreeSockets: 1,
-    timeout: 3000,
+    maxSockets: parseInt(process.env.MAX_SOCKETS || "2"),
+    maxFreeSockets: parseInt(process.env.MAX_FREE_SOCKETS || "1"),
+    timeout: parseInt(process.env.HTTP_TIMEOUT || "3000"),
 });
+async function callProvider(prompt, options, token) {
+    const provider = options?.provider || DEFAULT_PROVIDER;
+    switch (provider) {
+        case "ollama":
+            return callOllama(prompt, options, token);
+        case "gemini":
+            return callGemini(prompt, options, token);
+        default:
+            throw new Error(`Unknown provider: ${provider}`);
+    }
+}
+async function callGemini(prompt, options, token) {
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent`;
+    const response = await fetch(geminiUrl, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": GEMINI_API_KEY,
+        },
+        body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+                temperature: options?.temperature || 0.1,
+                maxOutputTokens: options?.num_predict || 12,
+            },
+        }),
+    });
+    if (!response.ok) {
+        throw new Error(`Gemini API error: ${response.status}`);
+    }
+    const data = (await response.json());
+    return data.candidates[0]?.content?.parts[0]?.text || "";
+}
 async function callOllama(prompt, options, token) {
     const controller = new AbortController();
     // const signal = controller.signal;
@@ -23,7 +66,6 @@ async function callOllama(prompt, options, token) {
     //      })
     //    : { dispose: () => {} };
     try {
-        const jsonStart = performance.now();
         const requestBody = JSON.stringify({
             model: modelName,
             prompt: prompt,
@@ -45,8 +87,6 @@ async function callOllama(prompt, options, token) {
                 ],
             },
         });
-        const jsonEnd = performance.now();
-        const fetchStart = performance.now();
         const response = await fetch(`${ollamaUrl}/api/generate`, {
             method: "POST",
             headers: {
@@ -58,15 +98,10 @@ async function callOllama(prompt, options, token) {
             // @ts-ignore - TypeScript doesn't recognize agent in fetch
             agent: httpAgent,
         });
-        const fetchEnd = performance.now();
-        extension_1.log.appendLine(`[HTTP] JSON serialize: ${(jsonEnd - jsonStart).toFixed(1)}ms | Fetch: ${(fetchEnd - fetchStart).toFixed(1)}ms`);
         if (!response.ok) {
             throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
         }
-        const parseStart = performance.now();
         const data = await response.json();
-        const parseEnd = performance.now();
-        extension_1.log.appendLine(`[HTTP] JSON parse: ${(parseEnd - parseStart).toFixed(1)}ms`);
         if (typeof data === "object" &&
             data !== null &&
             "response" in data &&
@@ -84,35 +119,26 @@ async function callOllama(prompt, options, token) {
     }
 }
 async function getSuggestion(parameters, token) {
-    const startTime = performance.now();
+    const inferenceStart = performance.now();
     try {
         const promptObj = (0, prompt_1.systemPrompt)(parameters);
-        const rawSuggestion = await callOllama(promptObj.content, promptObj.options, token);
-        // Clean up StarCoder FIM tokens and other special tokens
-        const cleanStart = performance.now();
-        let suggestion = rawSuggestion
+        const rawSuggestion = await callProvider(promptObj.content, promptObj.options, token);
+        const inferenceEnd = performance.now();
+        extension_1.log.appendLine(`[Inference] ${(inferenceEnd - inferenceStart).toFixed(1)}ms`);
+        // Basic cleanup
+        let basicCleaned = rawSuggestion
             .replace(/<fim_prefix>/g, "")
             .replace(/<fim_suffix>/g, "")
             .replace(/<fim_middle>/g, "")
-            .replace(/<\|[^|]*\|>/g, "") // Remove any other special tokens
+            .replace(/<\|[^|]*\|>/g, "")
             .trim();
-        const cleanEnd = performance.now();
-        extension_1.log.appendLine(`[Processing] String cleanup: ${(cleanEnd - cleanStart).toFixed(1)}ms`);
-        // Filter out conversational responses that start with explanatory text
-        if (suggestion.toLowerCase().startsWith("it looks like") ||
-            suggestion.toLowerCase().startsWith("however") ||
-            suggestion.toLowerCase().startsWith("here's") ||
-            suggestion.includes("issues with your code") ||
-            suggestion.includes("corrected version")) {
+        // Apply advanced filtering (markdown, conversational text, etc.)
+        const filteredSuggestion = (0, suggestion_filter_1.filterSuggestion)(basicCleaned);
+        if (!filteredSuggestion) {
             return undefined;
         }
-        if (!suggestion || suggestion.trim().length === 0) {
-            return undefined;
-        }
-        const endTime = performance.now();
-        const duration = endTime - startTime;
-        extension_1.log.appendLine(`[Performance] Suggestion took ${duration.toFixed(1)}ms`);
-        return suggestion;
+        extension_1.log.appendLine(`[Final] "${filteredSuggestion}"`);
+        return filteredSuggestion;
     }
     catch (err) {
         if (err?.name === "AbortError" ||
@@ -122,17 +148,5 @@ async function getSuggestion(parameters, token) {
         extension_1.log.appendLine(`[getSuggestion] Error: ${err?.message || err}`);
         return undefined;
     }
-}
-function isValidCodeCompletion(response) {
-    const invalidPhrases = [
-        "it looks like",
-        "however",
-        "here's a",
-        "let me",
-        "you're trying to",
-        "i can help",
-        "the issue is",
-    ];
-    return !invalidPhrases.some((phrase) => response.toLowerCase().includes(phrase));
 }
 //# sourceMappingURL=suggestion.js.map

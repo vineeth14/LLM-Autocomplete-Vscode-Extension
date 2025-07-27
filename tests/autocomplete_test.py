@@ -2,6 +2,8 @@
 Test file for autocomplete latency testing
 Contains incomplete code snippets where autocomplete should trigger
 """
+
+import time
 import math
 from typing import List
 
