@@ -6,7 +6,7 @@ exports.runPartialCompletionTests = runPartialCompletionTests;
 exports.runFunctionCompletionTests = runFunctionCompletionTests;
 const vscode = require("vscode");
 const fs = require("fs");
-const LLMInlineCompletionProvider_1 = require("./LLMInlineCompletionProvider");
+const LLMInlineCompletionProvider_1 = require("../src/autocomplete/LLMInlineCompletionProvider");
 class LatencyTester {
     constructor() {
         this.provider = new LLMInlineCompletionProvider_1.LLMInlineCompletionProvider();
@@ -43,7 +43,7 @@ class LatencyTester {
             { line: 48, char: 28, desc: "func param: 'calculate_area('" },
         ];
         // Open the test file
-        const document = await vscode.workspace.openTextDocument("/Users/vineethrajesh/Projects/custom-llm-autocomplete/tests/autocomplete_test.py");
+        const document = await vscode.workspace.openTextDocument("/Users/vineethrajesh/Projects/custom-llm-autocomplete/client/tests/autocomplete_test.py");
         for (let i = 0; i < testCases.length; i++) {
             const testCase = testCases[i];
             this.log(`\n📍 Test ${i + 1}/${testCases.length}: ${testCase.desc} (line ${testCase.line})`);
@@ -111,7 +111,7 @@ class LatencyTester {
             { line: 44, char: 4, desc: "📈 fibonacci: mathematical function" },
         ];
         // Open the test file
-        const document = await vscode.workspace.openTextDocument("/Users/vineethrajesh/Projects/custom-llm-autocomplete/tests/autocomplete_test.py");
+        const document = await vscode.workspace.openTextDocument("/Users/vineethrajesh/Projects/custom-llm-autocomplete/client/tests/autocomplete_test.py");
         for (let i = 0; i < testCases.length; i++) {
             const testCase = testCases[i];
             this.log(`\n📍 Function Test ${i + 1}/${testCases.length}: ${testCase.desc} (line ${testCase.line})`);

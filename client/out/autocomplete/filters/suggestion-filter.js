@@ -7,7 +7,6 @@ const FIM_TOKENS = [
     "<fim_middle>",
     "<|endoftext|>",
 ];
-// Keep as arrays for partial matching (startsWith, includes)
 const CONVERSATIONAL_START_PHRASES = [
     "here is",
     "here's",
@@ -26,11 +25,7 @@ const CONVERSATIONAL_POST_PHRASES = [
     "this code",
     "the function",
 ];
-// Use Set for exact matching (markdown now handled separately)
-const EXACT_TEMPLATE_MARKERS = new Set([
-// Markdown blocks now handled by startsWith('```') check
-]);
-// Keep as array for partial matching
+const EXACT_TEMPLATE_MARKERS = new Set([]);
 const PARTIAL_TEMPLATE_MARKERS = [
     "here's the code:",
     "complete the following:",
@@ -54,7 +49,6 @@ function filterSuggestion(rawSuggestion) {
 }
 function cleanTokensAndPhrases(text) {
     let cleaned = text;
-    // Use pre-compiled regexes
     FIM_TOKEN_REGEXES.forEach((regex) => {
         cleaned = cleaned.replace(regex, "");
     });
@@ -68,7 +62,7 @@ function filterConversationalLines(lines) {
     let hasSeenCode = false;
     for (const line of lines) {
         const trimmed = line.trim();
-        const lower = trimmed.toLowerCase(); // Calculate once
+        const lower = trimmed.toLowerCase();
         if (!hasSeenCode && shouldSkipLineBeforeCode(trimmed, lower)) {
             continue;
         }
@@ -85,10 +79,8 @@ function filterConversationalLines(lines) {
 function shouldSkipLineBeforeCode(trimmed, lower) {
     if (!trimmed)
         return true;
-    // Skip markdown code block markers (```python, ```, etc.)
     if (trimmed.startsWith('```'))
         return true;
-    // Fast exact lookup using Set + partial matching using array
     const hasExactMarker = EXACT_TEMPLATE_MARKERS.has(lower);
     const hasPartialMarker = PARTIAL_TEMPLATE_MARKERS.some(marker => lower.includes(marker));
     return hasExactMarker || hasPartialMarker || isPureConversationalLine(trimmed, lower);
@@ -96,7 +88,6 @@ function shouldSkipLineBeforeCode(trimmed, lower) {
 function isPureConversationalLine(trimmed, lower) {
     if (!trimmed)
         return false;
-    // Use arrays directly for partial matching
     const startsWithConversational = CONVERSATIONAL_START_PHRASES
         .some(phrase => lower.startsWith(phrase));
     const containsPostExplanation = CONVERSATIONAL_POST_PHRASES

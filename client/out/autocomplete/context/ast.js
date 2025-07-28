@@ -15,7 +15,6 @@ exports.getSnippetsForNode = getSnippetsForNode;
 const Parser = require("web-tree-sitter");
 const path = require("path");
 const fs = require("fs");
-const extension_1 = require("../../extension");
 // Build path from file root to cursor position
 // Find scope containing cursor
 // HelperVars pipeline, builds an Ast -> has fallback for autocomplete to work even if
@@ -74,30 +73,42 @@ async function getAst(fileContents) {
         return ast;
     }
     catch (e) {
-        extension_1.astLog.appendLine(`[AST] Error during parsing: ${e}`);
+        // contextLog.appendLine(`[AST] Error during parsing: ${e}`);
         return undefined;
     }
 }
 async function getTreePathAtCursor(ast, cursorIndex, cursorLine) {
     // Built in tree sitter search to find deepest node at cursor
     let cursorNode = ast.rootNode.descendantForIndex(cursorIndex);
-    extension_1.astLog.appendLine(`[TreePath] Cursor at byte ${cursorIndex}, line ${cursorLine}, found node: ${cursorNode.type}`);
+    // contextLog.appendLine(
+    // 	`[TreePath] Cursor at byte ${cursorIndex}, line ${cursorLine}, found node: ${cursorNode.type}`
+    // );
     // Check if cursorNode is the module/root node (usually not what we want for code completion)
     if (cursorNode.type === "module" &&
         cursorNode.startIndex === 0 &&
         cursorLine !== undefined) {
-        extension_1.astLog.appendLine(`[TreePath] Module node found - finding function by line number`);
+        // contextLog.appendLine(
+        // 	`[TreePath] Module node found - finding function by line number`
+        // );
         // Find all function definitions and check which one contains the cursor line
         const functions = ast.rootNode.children.filter((child) => child.type === "function_definition");
         let targetFunction = null;
         for (const func of functions) {
-            extension_1.astLog.appendLine(`[TreePath] Function ${func.children.find((c) => c.type === "identifier")?.text || "unknown"} spans lines ${func.startPosition.row}-${func.endPosition.row}`);
+            // contextLog.appendLine(
+            // 	`[TreePath] Function ${
+            // 		func.children.find((c) => c.type === "identifier")?.text || "unknown"
+            // 	} spans lines ${func.startPosition.row}-${func.endPosition.row}`
+            // );
             // Check if cursor is within this function's range
             if (cursorLine >= func.startPosition.row &&
                 cursorLine <= func.endPosition.row) {
                 targetFunction = func;
-                extension_1.astLog.appendLine(`[TreePath] Cursor is inside function: ${func.children.find((c) => c.type === "identifier")?.text ||
-                    "unknown"}`);
+                // contextLog.appendLine(
+                // 	`[TreePath] Cursor is inside function: ${
+                // 		func.children.find((c) => c.type === "identifier")?.text ||
+                // 		"unknown"
+                // 	}`
+                // );
                 break;
             }
         }
@@ -105,7 +116,9 @@ async function getTreePathAtCursor(ast, cursorIndex, cursorLine) {
             // Find the most specific node within this function at cursor position
             cursorNode =
                 targetFunction.descendantForIndex(cursorIndex) || targetFunction;
-            extension_1.astLog.appendLine(`[TreePath] Selected node: ${cursorNode.type} within target function`);
+            // contextLog.appendLine(
+            // 	`[TreePath] Selected node: ${cursorNode.type} within target function`
+            // );
         }
     }
     // A SyntaxNode represents a piece of parsed code with its type, source text, position, and tree relations (parent/children).
@@ -113,10 +126,14 @@ async function getTreePathAtCursor(ast, cursorIndex, cursorLine) {
     let current = cursorNode;
     while (current) {
         path.unshift(current); // Append at start
-        extension_1.astLog.appendLine(`[TreePath] Adding to path: ${current.type} (${current.startPosition.row}:${current.startPosition.column})`);
+        // contextLog.appendLine(
+        // 	`[TreePath] Adding to path: ${current.type} (${current.startPosition.row}:${current.startPosition.column})`
+        // );
         current = current.parent;
     }
-    extension_1.astLog.appendLine(`[TreePath] Final path: ${path.map((n) => n.type).join(" -> ")}`);
+    // contextLog.appendLine(
+    // 	`[TreePath] Final path: ${path.map((n) => n.type).join(" -> ")}`
+    // );
     return path;
 }
 async function getContextForPath(filepath, astPath) {
@@ -149,7 +166,7 @@ async function getSnippetsForNode(filepath, astNode) {
             snippets.push(snippet);
         }
         else {
-            extension_1.astLog.appendLine(`[SnippetsForNode] No snippet generated from match`);
+            // contextLog.appendLine(`[SnippetsForNode] No snippet generated from match`);
         }
     }
     return snippets;

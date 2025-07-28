@@ -7,7 +7,7 @@ const http_1 = require("http");
 const dotenv = require("dotenv");
 const path = require("path");
 const suggestion_filter_1 = require("./filters/suggestion-filter");
-// Load environment variables from .env file
+// Load environment variables from .env file  
 dotenv.config({ path: path.join(__dirname, "../../.env") });
 const DEFAULT_PROVIDER = process.env.LLM_PROVIDER || "ollama";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -58,13 +58,6 @@ async function callGemini(prompt, options, token) {
 }
 async function callOllama(prompt, options, token) {
     const controller = new AbortController();
-    // const signal = controller.signal;
-    // const timeoutId = setTimeout(() => controller.abort(), 5000);
-    //  const cancellationListener = token?.onCancellationRequested
-    //    ? token.onCancellationRequested(() => {
-    //        controller.abort();
-    //      })
-    //    : { dispose: () => {} };
     try {
         const requestBody = JSON.stringify({
             model: modelName,
@@ -94,7 +87,6 @@ async function callOllama(prompt, options, token) {
                 Connection: "keep-alive",
             },
             body: requestBody,
-            // signal: signal,
             // @ts-ignore - TypeScript doesn't recognize agent in fetch
             agent: httpAgent,
         });
@@ -114,26 +106,23 @@ async function callOllama(prompt, options, token) {
         }
     }
     finally {
-        //clearTimeout(timeoutId);
-        //cancellationListener.dispose();
     }
 }
 async function getSuggestion(parameters, token) {
-    const inferenceStart = performance.now();
     try {
         const promptObj = (0, prompt_1.systemPrompt)(parameters);
+        const inferenceStart = performance.now();
         const rawSuggestion = await callProvider(promptObj.content, promptObj.options, token);
         const inferenceEnd = performance.now();
-        extension_1.log.appendLine(`[Inference] ${(inferenceEnd - inferenceStart).toFixed(1)}ms`);
-        // Basic cleanup
         let basicCleaned = rawSuggestion
             .replace(/<fim_prefix>/g, "")
             .replace(/<fim_suffix>/g, "")
             .replace(/<fim_middle>/g, "")
             .replace(/<\|[^|]*\|>/g, "")
             .trim();
-        // Apply advanced filtering (markdown, conversational text, etc.)
         const filteredSuggestion = (0, suggestion_filter_1.filterSuggestion)(basicCleaned);
+        const inferenceTime = inferenceEnd - inferenceStart;
+        extension_1.log.appendLine(`[Timing] Inference: ${inferenceTime.toFixed(1)}ms`);
         if (!filteredSuggestion) {
             return undefined;
         }

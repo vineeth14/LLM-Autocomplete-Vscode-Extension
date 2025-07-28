@@ -6,7 +6,7 @@ exports.runPartialCompletionTests = runPartialCompletionTests;
 exports.runFunctionCompletionTests = runFunctionCompletionTests;
 const vscode = require("vscode");
 const fs = require("fs");
-const LLMInlineCompletionProvider_1 = require("./LLMInlineCompletionProvider");
+const LLMInlineCompletionProvider_1 = require("../autocomplete/LLMInlineCompletionProvider");
 class LatencyTester {
     constructor() {
         this.provider = new LLMInlineCompletionProvider_1.LLMInlineCompletionProvider();
@@ -43,7 +43,7 @@ class LatencyTester {
             { line: 48, char: 28, desc: "func param: 'calculate_area('" },
         ];
         // Open the test file
-        const document = await vscode.workspace.openTextDocument("/Users/vineethrajesh/Projects/custom-llm-autocomplete/tests/autocomplete_test.py");
+        const document = await vscode.workspace.openTextDocument("/Users/vineethrajesh/Projects/custom-llm-autocomplete/client/src/tests/autocomplete_test.py");
         for (let i = 0; i < testCases.length; i++) {
             const testCase = testCases[i];
             this.log(`\n📍 Test ${i + 1}/${testCases.length}: ${testCase.desc} (line ${testCase.line})`);
@@ -60,14 +60,20 @@ class LatencyTester {
                 });
                 const endTime = performance.now();
                 const latency = endTime - startTime;
+                const breakdown = this.provider.getLastTimingBreakdown();
                 const result = {
                     position: `${testCase.line}:${testCase.char} (${testCase.desc})`,
                     latency: latency,
                     success: items && items.length > 0,
                     suggestion: items?.[0]?.insertText?.toString(),
+                    breakdown: breakdown,
                 };
                 this.results.push(result);
                 this.log(`   ⏱️  ${latency.toFixed(1)}ms - ${result.success ? "✅" : "❌"}`);
+                if (breakdown) {
+                    this.log(`   📊 Breakdown: Debounce ${breakdown.debounce.toFixed(0)}ms | Cache ${breakdown.cache.toFixed(0)}ms | Context ${breakdown.context.toFixed(0)}ms | Network ${breakdown.network.toFixed(0)}ms`);
+                    this.log(`   👤 User perceived: ${breakdown.userPerceived.toFixed(0)}ms (after stopping typing)`);
+                }
                 if (result.suggestion) {
                     this.log(`   💡 "${result.suggestion.substring(0, 50)}..."`);
                 }
@@ -111,7 +117,7 @@ class LatencyTester {
             { line: 44, char: 4, desc: "📈 fibonacci: mathematical function" },
         ];
         // Open the test file
-        const document = await vscode.workspace.openTextDocument("/Users/vineethrajesh/Projects/custom-llm-autocomplete/tests/autocomplete_test.py");
+        const document = await vscode.workspace.openTextDocument("/Users/vineethrajesh/Projects/custom-llm-autocomplete/client/src/tests/autocomplete_test.py");
         for (let i = 0; i < testCases.length; i++) {
             const testCase = testCases[i];
             this.log(`\n📍 Function Test ${i + 1}/${testCases.length}: ${testCase.desc} (line ${testCase.line})`);
@@ -128,14 +134,20 @@ class LatencyTester {
                 });
                 const endTime = performance.now();
                 const latency = endTime - startTime;
+                const breakdown = this.provider.getLastTimingBreakdown();
                 const result = {
                     position: `${testCase.line}:${testCase.char} (${testCase.desc})`,
                     latency: latency,
                     success: items && items.length > 0,
                     suggestion: items?.[0]?.insertText?.toString(),
+                    breakdown: breakdown,
                 };
                 this.results.push(result);
                 this.log(`   ⏱️  ${latency.toFixed(1)}ms - ${result.success ? "✅" : "❌"}`);
+                if (breakdown) {
+                    this.log(`   📊 Breakdown: Debounce ${breakdown.debounce.toFixed(0)}ms | Cache ${breakdown.cache.toFixed(0)}ms | Context ${breakdown.context.toFixed(0)}ms | Network ${breakdown.network.toFixed(0)}ms`);
+                    this.log(`   👤 User perceived: ${breakdown.userPerceived.toFixed(0)}ms (after stopping typing)`);
+                }
                 if (result.suggestion) {
                     this.log(`   💡 Function body: "${result.suggestion.substring(0, 100)}..."`);
                 }
@@ -161,12 +173,27 @@ class LatencyTester {
         const successCount = this.results.filter((r) => r.success).length;
         const failedTests = this.results.filter((r) => !r.success);
         const slowTests = this.results.filter((r) => r.latency > 500);
+        const successfulResults = this.results.filter((r) => r.success && r.breakdown);
         this.log(`Tests run: ${this.results.length}`);
         this.log(`Success rate: ${((successCount / this.results.length) * 100).toFixed(1)}%`);
         this.log(`Average latency: ${this.average(latencies).toFixed(1)}ms`);
         this.log(`Median latency: ${this.median(latencies).toFixed(1)}ms`);
         this.log(`Min latency: ${Math.min(...latencies).toFixed(1)}ms`);
         this.log(`Max latency: ${Math.max(...latencies).toFixed(1)}ms`);
+        // Breakdown analysis for successful tests
+        if (successfulResults.length > 0) {
+            const debounceAvg = this.average(successfulResults.map(r => r.breakdown.debounce));
+            const cacheAvg = this.average(successfulResults.map(r => r.breakdown.cache));
+            const contextAvg = this.average(successfulResults.map(r => r.breakdown.context));
+            const networkAvg = this.average(successfulResults.map(r => r.breakdown.network));
+            const userPerceivedAvg = this.average(successfulResults.map(r => r.breakdown.userPerceived));
+            this.log(`\n⚡ TIMING BREAKDOWN (successful tests)`);
+            this.log(`Average debounce: ${debounceAvg.toFixed(1)}ms`);
+            this.log(`Average cache lookup: ${cacheAvg.toFixed(1)}ms`);
+            this.log(`Average context extraction: ${contextAvg.toFixed(1)}ms`);
+            this.log(`Average network (LLM): ${networkAvg.toFixed(1)}ms`);
+            this.log(`Average user perceived: ${userPerceivedAvg.toFixed(1)}ms`);
+        }
         this.log("\n📋 Individual Results:");
         this.results.forEach((result, i) => {
             const status = result.success ? "✅" : "❌";

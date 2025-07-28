@@ -10,7 +10,7 @@
 import * as Parser from "web-tree-sitter";
 import * as path from "path";
 import * as fs from "fs";
-import { astLog } from "../../extension";
+import { contextLog } from "../../extension";
 import { AutocompleteSnippet, ScopeLevel, SymbolType } from "./types";
 import { language } from "tree-sitter-python";
 
@@ -111,7 +111,7 @@ export async function getAst(
 
 		return ast;
 	} catch (e) {
-		astLog.appendLine(`[AST] Error during parsing: ${e}`);
+		// contextLog.appendLine(`[AST] Error during parsing: ${e}`);
 		return undefined;
 	}
 }
@@ -124,9 +124,9 @@ export async function getTreePathAtCursor(
 	// Built in tree sitter search to find deepest node at cursor
 	let cursorNode = ast.rootNode.descendantForIndex(cursorIndex);
 
-	astLog.appendLine(
-		`[TreePath] Cursor at byte ${cursorIndex}, line ${cursorLine}, found node: ${cursorNode.type}`
-	);
+	// contextLog.appendLine(
+	// 	`[TreePath] Cursor at byte ${cursorIndex}, line ${cursorLine}, found node: ${cursorNode.type}`
+	// );
 
 	// Check if cursorNode is the module/root node (usually not what we want for code completion)
 	if (
@@ -134,9 +134,9 @@ export async function getTreePathAtCursor(
 		cursorNode.startIndex === 0 &&
 		cursorLine !== undefined
 	) {
-		astLog.appendLine(
-			`[TreePath] Module node found - finding function by line number`
-		);
+		// contextLog.appendLine(
+		// 	`[TreePath] Module node found - finding function by line number`
+		// );
 
 		// Find all function definitions and check which one contains the cursor line
 		const functions = ast.rootNode.children.filter(
@@ -145,11 +145,11 @@ export async function getTreePathAtCursor(
 
 		let targetFunction: Parser.SyntaxNode | null = null;
 		for (const func of functions) {
-			astLog.appendLine(
-				`[TreePath] Function ${
-					func.children.find((c) => c.type === "identifier")?.text || "unknown"
-				} spans lines ${func.startPosition.row}-${func.endPosition.row}`
-			);
+			// contextLog.appendLine(
+			// 	`[TreePath] Function ${
+			// 		func.children.find((c) => c.type === "identifier")?.text || "unknown"
+			// 	} spans lines ${func.startPosition.row}-${func.endPosition.row}`
+			// );
 
 			// Check if cursor is within this function's range
 			if (
@@ -157,12 +157,12 @@ export async function getTreePathAtCursor(
 				cursorLine <= func.endPosition.row
 			) {
 				targetFunction = func;
-				astLog.appendLine(
-					`[TreePath] Cursor is inside function: ${
-						func.children.find((c) => c.type === "identifier")?.text ||
-						"unknown"
-					}`
-				);
+				// contextLog.appendLine(
+				// 	`[TreePath] Cursor is inside function: ${
+				// 		func.children.find((c) => c.type === "identifier")?.text ||
+				// 		"unknown"
+				// 	}`
+				// );
 				break;
 			}
 		}
@@ -171,9 +171,9 @@ export async function getTreePathAtCursor(
 			// Find the most specific node within this function at cursor position
 			cursorNode =
 				targetFunction.descendantForIndex(cursorIndex) || targetFunction;
-			astLog.appendLine(
-				`[TreePath] Selected node: ${cursorNode.type} within target function`
-			);
+			// contextLog.appendLine(
+			// 	`[TreePath] Selected node: ${cursorNode.type} within target function`
+			// );
 		}
 	}
 
@@ -182,15 +182,15 @@ export async function getTreePathAtCursor(
 	let current = cursorNode;
 	while (current) {
 		path.unshift(current); // Append at start
-		astLog.appendLine(
-			`[TreePath] Adding to path: ${current.type} (${current.startPosition.row}:${current.startPosition.column})`
-		);
+		// contextLog.appendLine(
+		// 	`[TreePath] Adding to path: ${current.type} (${current.startPosition.row}:${current.startPosition.column})`
+		// );
 		current = current.parent;
 	}
 
-	astLog.appendLine(
-		`[TreePath] Final path: ${path.map((n) => n.type).join(" -> ")}`
-	);
+	// contextLog.appendLine(
+	// 	`[TreePath] Final path: ${path.map((n) => n.type).join(" -> ")}`
+	// );
 	return path;
 }
 
@@ -238,7 +238,7 @@ export async function getSnippetsForNode(
 		if (snippet) {
 			snippets.push(snippet);
 		} else {
-			astLog.appendLine(`[SnippetsForNode] No snippet generated from match`);
+			// contextLog.appendLine(`[SnippetsForNode] No snippet generated from match`);
 		}
 	}
 

@@ -42,10 +42,7 @@ def numIslands(grid):
 
 def fibonacci_progressive(n: int) -> int:
     """Fibonacci - Complete from empty function""" 
-    if n == 0 or n == 1:
-        return n
-    else:
-        return fibonacci_progressive(n - 2) + fibonacci_progressive(n - 1)
+
 
 def main():
     """Main function with incomplete calls"""

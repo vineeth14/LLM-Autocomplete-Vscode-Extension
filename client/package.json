@@ -16,10 +16,12 @@
 		"dotenv": "^17.2.1",
 		"tree-sitter-python": "^0.21.0",
 		"tree-sitter-wasms": "^0.1.11",
+		"uuid": "^10.0.0",
 		"vscode-languageclient": "^8.1.0",
 		"web-tree-sitter": "^0.21.0"
 	},
 	"devDependencies": {
+		"@types/uuid": "^10.0.0",
 		"@types/vscode": "^1.81.0"
 	}
 }

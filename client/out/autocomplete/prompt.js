@@ -52,7 +52,8 @@ const systemPrompt = (parameters) => {
     const suffix = parameters?.suffix || "";
     const provider = process.env.LLM_PROVIDER || "ollama";
     // Use simple FIM template with just cursor context
-    const cleanPrefix = prefix.trim();
+    // Don't trim prefix to preserve indentation context
+    const cleanPrefix = prefix;
     const cleanSuffix = suffix.trimEnd();
     // Choose template based on provider
     const template = provider === "gemini" ? geminiTemplate : starcoderFimTemplate;

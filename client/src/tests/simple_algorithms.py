@@ -5,10 +5,7 @@ import math
 from typing import List, Dict
 
 def area_of_square(side: float) -> float:
-    """Calculate area of a square"""
-    area = side * side
-    print(f"The area of a square is {area}")
-    return area
+    return side * side
 
 def area_of_circle(radius: float) -> float:
     """Calculate area of a circle"""
@@ -19,18 +16,13 @@ def area_of_rectangle(length: float, width: float) -> float:
 
 def fibonacci(n: int) -> int:
     """Generate nth fibonacci number"""
-    if n == 0 or n == 1:
-        return 1
-    return fibonacci(n - 2) + fibonacci(n - 1)
+
+
 
 def factorial(n: int) -> int:
     """Calculate factorial of n"""
-    if n <= 1:
-        return 1
-    result = 1
-    for i in range(2, n + 1):
-        result *= i
-    return result
+
+
 
 def find_max(numbers: List[int]) -> int:
     """Find maximum number in list"""
@@ -45,7 +37,25 @@ def find_max(numbers: List[int]) -> int:
 def bubble_sort(arr: List[int]) -> List[int]:
     """Simple bubble sort implementation"""
     n = len(arr)
-    for i in range(n):
 
-    return arr
+def merge_sort(arr):
+    """Merge Sort Implementation"""
+    
 
+def numberOfIslands(grid: List[List[str]]) -> int:
+    columns = len(0)
+    rows= len(grid)
+    if not grid:
+        return 0
+
+    visited = set()
+    islands = 0
+
+    def dfs(r, c):
+        if (r < 0 or r >= rowsor c < 0 or c >= cols or grid[r][c] == '0' or visited[r][c]):
+            return
+        visited[r][c] = True
+        dfs(r + 1, c, grid, visited, rows, cols)
+        dfs(r - 1, c, grid, visited, rows, cols)
+        dfs(r, c + 1, grid, visited, rows, cols)
+        dfs(r, c - 1, grid, visited, rows, cols)

@@ -59,8 +59,13 @@ class ContextRetrievalService {
         const cursorOffset = document.offsetAt(position);
         const currentLineText = lines[currentLine] || "";
         const isAtEndOfLine = currentChar === currentLineText.length;
-        extension_1.astLog.appendLine("Prefix \n" + prefix);
-        extension_1.astLog.appendLine("Suffix \n" + suffix);
+        extension_1.contextLog.appendLine("=== CONTEXT ===");
+        extension_1.contextLog.appendLine("Prefix:");
+        extension_1.contextLog.appendLine(prefix);
+        extension_1.contextLog.appendLine("---");
+        extension_1.contextLog.appendLine("Suffix:");
+        extension_1.contextLog.appendLine(suffix);
+        extension_1.contextLog.appendLine("===============");
         return {
             prefix: prefix,
             suffix: suffix,

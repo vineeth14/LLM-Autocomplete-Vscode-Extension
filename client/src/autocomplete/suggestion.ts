@@ -12,7 +12,7 @@ import * as dotenv from "dotenv";
 import * as path from "path";
 import { filterSuggestion } from "./filters/suggestion-filter";
 
-// Load environment variables from .env file
+// Load environment variables from .env file  
 dotenv.config({ path: path.join(__dirname, "../../.env") });
 
 const DEFAULT_PROVIDER = process.env.LLM_PROVIDER || "ollama";
@@ -81,14 +81,6 @@ async function callOllama(
 	token?: CancellationToken
 ): Promise<string> {
 	const controller = new AbortController();
-	// const signal = controller.signal;
-	// const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-	//  const cancellationListener = token?.onCancellationRequested
-	//    ? token.onCancellationRequested(() => {
-	//        controller.abort();
-	//      })
-	//    : { dispose: () => {} };
 	try {
 		const requestBody = JSON.stringify({
 			model: modelName,
@@ -119,7 +111,6 @@ async function callOllama(
 				Connection: "keep-alive",
 			},
 			body: requestBody,
-			// signal: signal,
 			// @ts-ignore - TypeScript doesn't recognize agent in fetch
 			agent: httpAgent,
 		});
@@ -142,8 +133,6 @@ async function callOllama(
 			throw new Error("Invalid response format from Ollama API");
 		}
 	} finally {
-		//clearTimeout(timeoutId);
-		//cancellationListener.dispose();
 	}
 }
 
@@ -151,29 +140,28 @@ export async function getSuggestion(
 	parameters: Parameters,
 	token?: CancellationToken
 ): Promise<string | undefined> {
-	const inferenceStart = performance.now();
 	try {
 		const promptObj = systemPrompt(parameters);
 
+		const inferenceStart = performance.now();
 		const rawSuggestion = await callProvider(
 			promptObj.content,
 			promptObj.options,
 			token
 		);
-		
 		const inferenceEnd = performance.now();
-		log.appendLine(`[Inference] ${(inferenceEnd - inferenceStart).toFixed(1)}ms`);
-
-		// Basic cleanup
+		
 		let basicCleaned = rawSuggestion
 			.replace(/<fim_prefix>/g, "")
 			.replace(/<fim_suffix>/g, "")
 			.replace(/<fim_middle>/g, "")
 			.replace(/<\|[^|]*\|>/g, "")
 			.trim();
-
-		// Apply advanced filtering (markdown, conversational text, etc.)
+		
 		const filteredSuggestion = filterSuggestion(basicCleaned);
+		
+		const inferenceTime = inferenceEnd - inferenceStart;
+		log.appendLine(`[Timing] Inference: ${inferenceTime.toFixed(1)}ms`);
 		
 		if (!filteredSuggestion) {
 			return undefined;

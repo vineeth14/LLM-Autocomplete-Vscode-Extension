@@ -18,7 +18,17 @@
 		"commands": [
 			{
 				"command": "llm-autocomplete.runLatencyTests",
-				"title": "Run Latency Tests",
+				"title": "Run All Latency Tests",
+				"category": "LLM Autocomplete"
+			},
+			{
+				"command": "llm-autocomplete.runPartialTests",
+				"title": "Run Partial Completion Tests",
+				"category": "LLM Autocomplete"
+			},
+			{
+				"command": "llm-autocomplete.runFunctionTests",
+				"title": "Run Function Completion Tests",
 				"category": "LLM Autocomplete"
 			}
 		]

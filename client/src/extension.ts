@@ -10,17 +10,17 @@ import {
 } from "vscode-languageclient/node";
 
 import { LLMInlineCompletionProvider } from "./autocomplete/LLMInlineCompletionProvider";
-import { runLatencyTests } from "./autocomplete/latency-test";
+import { runLatencyTests, runPartialCompletionTests, runFunctionCompletionTests } from "./tests/latency-test";
 
 let client: LanguageClient;
 
-// Global debug -> print to extension host output channel
+// Global debug -> print to extension host output channels
 export const log = vscode.window.createOutputChannel("LLM Tab Complete");
-export const astLog = vscode.window.createOutputChannel("AST Testing");
+export const contextLog = vscode.window.createOutputChannel("Context");
 
 export function activate(context: ExtensionContext) {
 	log.appendLine("Extension activated");
-	// log.show();
+	log.show();
 	// The server is implemented in node
 	const serverModule = context.asAbsolutePath(
 		path.join("server", "out", "server.js")
@@ -65,9 +65,12 @@ export function activate(context: ExtensionContext) {
 	);
 	context.subscriptions.push(disposable);
 
-	// Register latency test command
+	// Register latency test commands
 	const testCommand = vscode.commands.registerCommand('llm-autocomplete.runLatencyTests', runLatencyTests);
-	context.subscriptions.push(testCommand);
+	const partialTestCommand = vscode.commands.registerCommand('llm-autocomplete.runPartialTests', runPartialCompletionTests);
+	const functionTestCommand = vscode.commands.registerCommand('llm-autocomplete.runFunctionTests', runFunctionCompletionTests);
+	
+	context.subscriptions.push(testCommand, partialTestCommand, functionTestCommand);
 }
 
 export function deactivate(): Thenable<void> | undefined {
