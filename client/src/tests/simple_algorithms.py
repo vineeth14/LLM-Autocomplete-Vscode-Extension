@@ -43,19 +43,9 @@ def merge_sort(arr):
     
 
 def numberOfIslands(grid: List[List[str]]) -> int:
-    columns = len(0)
-    rows= len(grid)
-    if not grid:
-        return 0
 
-    visited = set()
-    islands = 0
 
-    def dfs(r, c):
-        if (r < 0 or r >= rowsor c < 0 or c >= cols or grid[r][c] == '0' or visited[r][c]):
-            return
-        visited[r][c] = True
-        dfs(r + 1, c, grid, visited, rows, cols)
-        dfs(r - 1, c, grid, visited, rows, cols)
-        dfs(r, c + 1, grid, visited, rows, cols)
-        dfs(r, c - 1, grid, visited, rows, cols)
+
+
+    
+        

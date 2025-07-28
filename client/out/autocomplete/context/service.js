@@ -18,26 +18,26 @@ class ContextRetrievalService {
     }
     async getSimpleCursorContext(document, position) {
         const text = document.getText();
-        const lines = text.split("\n");
+        const lines = text.split('\n');
         const currentLine = position.line;
         const currentChar = position.character;
-        const contextBefore = 3;
-        const contextAfter = 1;
+        const contextBefore = 15;
+        const contextAfter = 10;
         const startLine = Math.max(0, currentLine - contextBefore);
         const endLine = Math.min(lines.length - 1, currentLine + contextAfter);
         const prefixLines = lines.slice(startLine, currentLine);
         const suffixLines = lines.slice(currentLine + 1, endLine + 1);
-        const currentLinePrefix = lines[currentLine]?.substring(0, currentChar) || "";
-        const currentLineSuffix = lines[currentLine]?.substring(currentChar) || "";
+        const currentLinePrefix = lines[currentLine]?.substring(0, currentChar) || '';
+        const currentLineSuffix = lines[currentLine]?.substring(currentChar) || '';
         const imports = await this.getImportsForDocument(document);
-        const cleanPrefixLines = prefixLines.filter((line) => {
+        const cleanPrefixLines = prefixLines.filter(line => {
             const trimmed = line.trim();
-            const isImport = trimmed.startsWith("import ") || trimmed.startsWith("from ");
+            const isImport = trimmed.startsWith('import ') || trimmed.startsWith('from ');
             if (!isImport) {
                 return true; // Keep non-import lines
             }
             // For import lines, only remove if it's already in the cached imports
-            return !imports.some((cachedImport) => cachedImport.trim() === trimmed);
+            return !imports.some(cachedImport => cachedImport.trim() === trimmed);
         });
         // Build prefix context with proper spacing
         const allPrefixLines = [];
@@ -46,26 +46,26 @@ class ContextRetrievalService {
             allPrefixLines.push(...imports);
             // Only add blank line if there are other lines to follow
             if (cleanPrefixLines.length > 0 || currentLinePrefix.trim()) {
-                allPrefixLines.push("");
+                allPrefixLines.push('');
             }
         }
         // Add context lines
         allPrefixLines.push(...cleanPrefixLines);
         // Add current line prefix
         allPrefixLines.push(currentLinePrefix);
-        const prefix = allPrefixLines.join("\n");
+        const prefix = allPrefixLines.join('\n');
         const allSuffixLines = [currentLineSuffix, ...suffixLines];
-        const suffix = allSuffixLines.join("\n");
+        const suffix = allSuffixLines.join('\n');
         const cursorOffset = document.offsetAt(position);
-        const currentLineText = lines[currentLine] || "";
+        const currentLineText = lines[currentLine] || '';
         const isAtEndOfLine = currentChar === currentLineText.length;
-        extension_1.contextLog.appendLine("=== CONTEXT ===");
-        extension_1.contextLog.appendLine("Prefix:");
+        extension_1.contextLog.appendLine('=== CONTEXT ===');
+        extension_1.contextLog.appendLine('Prefix:');
         extension_1.contextLog.appendLine(prefix);
-        extension_1.contextLog.appendLine("---");
-        extension_1.contextLog.appendLine("Suffix:");
+        extension_1.contextLog.appendLine('---');
+        extension_1.contextLog.appendLine('Suffix:');
         extension_1.contextLog.appendLine(suffix);
-        extension_1.contextLog.appendLine("===============");
+        extension_1.contextLog.appendLine('===============');
         return {
             prefix: prefix,
             suffix: suffix,
@@ -76,28 +76,28 @@ class ContextRetrievalService {
     }
     getImportHash(text) {
         const importSection = text.substring(0, Math.min(1000, text.length));
-        const crypto = require("crypto");
-        return crypto.createHash("md5").update(importSection).digest("hex");
+        const crypto = require('crypto');
+        return crypto.createHash('md5').update(importSection).digest('hex');
     }
     async extractImportsFromAST(ast) {
         const imports = [];
         for (const child of ast.rootNode.namedChildren) {
-            if (child.type === "import_statement" ||
-                child.type === "import_from_statement") {
+            if (child.type === 'import_statement' ||
+                child.type === 'import_from_statement') {
                 imports.push(child.text.trim()); // Ensure consistent trimming
             }
-            else if (child.type !== "comment") {
+            else if (child.type !== 'comment') {
                 break;
             }
         }
         return imports;
     }
     async getImportsForDocument(document) {
-        if (document.languageId !== "python") {
+        if (document.languageId !== 'python') {
             return [];
         }
         const text = document.getText();
-        const cacheKey = document.uri.toString() + ":" + this.getImportHash(text);
+        const cacheKey = document.uri.toString() + ':' + this.getImportHash(text);
         const cached = this.importCache.get(cacheKey);
         if (cached) {
             return cached;
@@ -117,14 +117,14 @@ class ContextRetrievalService {
         return [];
     }
     extractImportsSimple(text) {
-        const lines = text.split("\n");
+        const lines = text.split('\n');
         const imports = [];
         for (let i = 0; i < Math.min(15, lines.length); i++) {
             const line = lines[i].trim();
-            if (line.startsWith("import") || line.startsWith("from")) {
+            if (line.startsWith('import') || line.startsWith('from')) {
                 imports.push(line); // Use trimmed line for consistency
             }
-            else if (line && !line.startsWith("#")) {
+            else if (line && !line.startsWith('#')) {
                 break;
             }
         }

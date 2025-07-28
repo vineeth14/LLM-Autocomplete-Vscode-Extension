@@ -36,7 +36,6 @@ class LLMInlineCompletionProvider {
             const currentPrefix = document
                 .lineAt(position)
                 .text.substring(0, position.character);
-            // Create unique cache key with file position to avoid wrong cache hits
             const cacheKey = `${currentPrefix}:${document.offsetAt(position)}`;
             const cached = this.cache.get(cacheKey);
             const cacheEnd = performance.now();

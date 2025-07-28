@@ -38,10 +38,20 @@
 		"compile": "tsc -b && npm run copy-queries",
 		"copy-queries": "mkdir -p client/out/autocomplete/context/languages/python/queries && cp client/src/autocomplete/context/languages/python/queries/*.scm client/out/autocomplete/context/languages/python/queries/",
 		"watch": "tsc -b -w",
-		"postinstall": "cd client && npm install && cd ../server && npm install && cd .."
+		"postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
+		"lint": "eslint . --ext .ts,.js",
+		"lint:fix": "eslint . --ext .ts,.js --fix",
+		"format": "prettier --write .",
+		"format:check": "prettier --check ."
 	},
 	"devDependencies": {
 		"@types/node": "^20.5.7",
+		"@typescript-eslint/eslint-plugin": "^8.38.0",
+		"@typescript-eslint/parser": "^8.38.0",
+		"eslint": "^9.32.0",
+		"eslint-config-prettier": "^10.1.8",
+		"eslint-plugin-prettier": "^5.5.3",
+		"prettier": "^3.6.2",
 		"typescript": "^5.2.2"
 	},
 	"dependencies": {
