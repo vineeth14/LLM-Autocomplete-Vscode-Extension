@@ -1,16 +1,9 @@
 /**
  * CONTEXT FORMATTING UTILITIES (Currently Unused)
-<<<<<<< HEAD
- *
- * This file provides sophisticated context prioritization and formatting
- * for AST-based context extraction. Currently inactive but preserved.
- *
-=======
  * 
  * This file provides sophisticated context prioritization and formatting
  * for AST-based context extraction. Currently inactive but preserved.
  * 
->>>>>>> main
  * Features: Scope-based prioritization, relevance filtering, LLM-optimized formatting
  */
 
@@ -19,21 +12,6 @@ import { AutocompleteSnippet } from "./types";
 /**
  * Prioritize snippets based on scope hierarchy and symbol type, filtering for relevance
  */
-<<<<<<< HEAD
-export function prioritizeSnippets(
-	snippets: AutocompleteSnippet[]
-): AutocompleteSnippet[] {
-	// First filter out clearly irrelevant functions
-	const relevantSnippets = filterRelevantSnippets(snippets);
-
-	// Then prioritize the relevant ones
-	const priorityOrder = {
-		import: 1,
-		current: 2,
-		class: 3,
-		parent: 4,
-		module: 5,
-=======
 export function prioritizeSnippets(snippets: AutocompleteSnippet[]): AutocompleteSnippet[] {
 	// First filter out clearly irrelevant functions
 	const relevantSnippets = filterRelevantSnippets(snippets);
@@ -45,31 +23,11 @@ export function prioritizeSnippets(snippets: AutocompleteSnippet[]): Autocomplet
 		"class": 3,
 		"parent": 4,
 		"module": 5
->>>>>>> main
 	};
 
 	return relevantSnippets.sort((a, b) => {
 		const aPriority = priorityOrder[a.scopeLevel] || 99;
 		const bPriority = priorityOrder[b.scopeLevel] || 99;
-<<<<<<< HEAD
-
-		if (aPriority !== bPriority) {
-			return aPriority - bPriority;
-		}
-
-		// Secondary sort by symbol type (functions before variables)
-		const symbolPriority = {
-			import: 1,
-			class: 2,
-			function: 3,
-			method: 4,
-			variable: 5,
-		};
-		return (
-			(symbolPriority[a.symbolType] || 99) -
-			(symbolPriority[b.symbolType] || 99)
-		);
-=======
 		
 		if (aPriority !== bPriority) {
 			return aPriority - bPriority;
@@ -78,40 +36,12 @@ export function prioritizeSnippets(snippets: AutocompleteSnippet[]): Autocomplet
 		// Secondary sort by symbol type (functions before variables)
 		const symbolPriority = { "import": 1, "class": 2, "function": 3, "method": 4, "variable": 5 };
 		return (symbolPriority[a.symbolType] || 99) - (symbolPriority[b.symbolType] || 99);
->>>>>>> main
 	});
 }
 
 /**
  * Filter snippets to only include truly relevant ones based on scope proximity and symbol importance
  */
-<<<<<<< HEAD
-function filterRelevantSnippets(
-	snippets: AutocompleteSnippet[]
-): AutocompleteSnippet[] {
-	// Always keep imports (maximum 5 most recent/relevant)
-	const imports = snippets.filter(s => s.symbolType === "import").slice(0, 5);
-
-	// Always keep current scope items (functions/classes where cursor is)
-	const currentScope = snippets.filter(s => s.scopeLevel === "current");
-
-	// Keep class scope items only if we're in a class (methods, properties)
-	const classScope = snippets
-		.filter(s => s.scopeLevel === "class")
-		.slice(0, 3);
-
-	// Be very selective with module-level items - only keep 1-2 most relevant
-	const moduleItems = snippets
-		.filter(
-			s =>
-				s.scopeLevel === "module" &&
-				s.symbolType !== "import" &&
-				// Prioritize functions over classes at module level
-				(s.symbolType === "function" || s.symbolType === "class")
-		)
-		.slice(0, 1);
-
-=======
 function filterRelevantSnippets(snippets: AutocompleteSnippet[]): AutocompleteSnippet[] {
 	// Always keep imports (maximum 5 most recent/relevant)
 	const imports = snippets.filter(s => s.symbolType === "import").slice(0, 5);
@@ -130,38 +60,22 @@ function filterRelevantSnippets(snippets: AutocompleteSnippet[]): AutocompleteSn
 		(s.symbolType === "function" || s.symbolType === "class")
 	).slice(0, 1);
 	
->>>>>>> main
 	return [...imports, ...currentScope, ...classScope, ...moduleItems];
 }
 
 /**
  * Format snippets into structured, compact context for LLM prompt
  */
-<<<<<<< HEAD
-export function formatSnippetsAsContext(
-	snippets: AutocompleteSnippet[]
-): string {
-=======
 export function formatSnippetsAsContext(snippets: AutocompleteSnippet[]): string {
->>>>>>> main
 	if (snippets.length === 0) return "";
 
 	const imports = snippets.filter(s => s.symbolType === "import");
 	const currentScope = snippets.filter(s => s.scopeLevel === "current");
 	const classScope = snippets.filter(s => s.scopeLevel === "class");
-<<<<<<< HEAD
-	const moduleScope = snippets.filter(
-		s => s.scopeLevel === "module" && s.symbolType !== "import"
-	);
-
-	let context = "";
-
-=======
 	const moduleScope = snippets.filter(s => s.scopeLevel === "module" && s.symbolType !== "import");
 
 	let context = "";
 	
->>>>>>> main
 	// Add imports compactly (one line each)
 	if (imports.length > 0) {
 		context += imports.map(s => s.content).join("\n") + "\n\n";
@@ -196,36 +110,16 @@ export function buildScopeAwareContext(
 ): { prefix: string; suffix: string } {
 	// Prioritize and filter for only the most relevant snippets
 	const prioritizedSnippets = prioritizeSnippets(snippets);
-<<<<<<< HEAD
-
-	// Remove duplicates between AST snippets and immediate context
-	const deduplicatedSnippets = removeDuplicates(
-		prioritizedSnippets,
-		immediatePrefix
-	);
-
-=======
 	
 	// Remove duplicates between AST snippets and immediate context
 	const deduplicatedSnippets = removeDuplicates(prioritizedSnippets, immediatePrefix);
 	
->>>>>>> main
 	// Format context with current function scope awareness
 	const scopePrefix = formatSnippetsAsContext(deduplicatedSnippets);
 
 	// Combine intelligently - scope context + clean immediate context
-<<<<<<< HEAD
-	const cleanedImmediate = removeRedundantFromImmediate(
-		immediatePrefix,
-		deduplicatedSnippets
-	);
-	const combinedPrefix = scopePrefix
-		? `${scopePrefix}\n\n${cleanedImmediate}`
-		: immediatePrefix;
-=======
 	const cleanedImmediate = removeRedundantFromImmediate(immediatePrefix, deduplicatedSnippets);
 	const combinedPrefix = scopePrefix ? `${scopePrefix}\n\n${cleanedImmediate}` : immediatePrefix;
->>>>>>> main
 	const trimmedPrefix = ensureContextLength(combinedPrefix, immediateSuffix);
 
 	return {
@@ -237,14 +131,7 @@ export function buildScopeAwareContext(
 /**
  * Remove snippets that already appear in immediate context to avoid duplication
  */
-<<<<<<< HEAD
-function removeDuplicates(
-	snippets: AutocompleteSnippet[],
-	immediateContext: string
-): AutocompleteSnippet[] {
-=======
 function removeDuplicates(snippets: AutocompleteSnippet[], immediateContext: string): AutocompleteSnippet[] {
->>>>>>> main
 	return snippets.filter(snippet => {
 		// For imports, check if already present in immediate context
 		if (snippet.symbolType === "import") {
@@ -258,21 +145,6 @@ function removeDuplicates(snippets: AutocompleteSnippet[], immediateContext: str
 /**
  * Remove redundant lines from immediate context that are covered by AST snippets
  */
-<<<<<<< HEAD
-function removeRedundantFromImmediate(
-	immediatePrefix: string,
-	snippets: AutocompleteSnippet[]
-): string {
-	const lines = immediatePrefix.split("\n");
-	const importLines = snippets
-		.filter(s => s.symbolType === "import")
-		.map(s => s.content.trim());
-
-	// Remove import lines that are already in AST snippets
-	const cleanedLines = lines.filter(line => {
-		const trimmed = line.trim();
-		if (trimmed.startsWith("import ") || trimmed.startsWith("from ")) {
-=======
 function removeRedundantFromImmediate(immediatePrefix: string, snippets: AutocompleteSnippet[]): string {
 	const lines = immediatePrefix.split('\n');
 	const importLines = snippets.filter(s => s.symbolType === "import").map(s => s.content.trim());
@@ -281,18 +153,12 @@ function removeRedundantFromImmediate(immediatePrefix: string, snippets: Autocom
 	const cleanedLines = lines.filter(line => {
 		const trimmed = line.trim();
 		if (trimmed.startsWith('import ') || trimmed.startsWith('from ')) {
->>>>>>> main
 			return !importLines.some(importLine => importLine === trimmed);
 		}
 		return true;
 	});
-<<<<<<< HEAD
-
-	return cleanedLines.join("\n");
-=======
 	
 	return cleanedLines.join('\n');
->>>>>>> main
 }
 
 /**
@@ -302,40 +168,12 @@ function removeRedundantFromImmediate(immediatePrefix: string, snippets: Autocom
 function ensureContextLength(prefix: string, suffix: string): string {
 	const MAX_CONTEXT_CHARS = 2000; // Roughly 400-500 tokens
 	const totalLength = prefix.length + suffix.length;
-<<<<<<< HEAD
-
-=======
 	
->>>>>>> main
 	if (totalLength <= MAX_CONTEXT_CHARS) {
 		return prefix;
 	}
 
 	// If too long, prioritize immediate context over scope context
-<<<<<<< HEAD
-	const lines = prefix.split("\n");
-	const scopeEndIndex = lines.findIndex(line => line.trim() === "") + 1;
-
-	if (scopeEndIndex > 0 && scopeEndIndex < lines.length) {
-		// Keep immediate context, trim scope context
-		const immediateContext = lines.slice(scopeEndIndex).join("\n");
-		const availableForScope =
-			MAX_CONTEXT_CHARS - suffix.length - immediateContext.length - 10;
-
-		if (availableForScope > 200) {
-			const scopeContext = lines.slice(0, scopeEndIndex).join("\n");
-			return (
-				scopeContext.substring(0, availableForScope) +
-				"\n\n" +
-				immediateContext
-			);
-		} else {
-			// Only keep immediate context if scope takes too much space
-			return immediateContext.substring(
-				0,
-				MAX_CONTEXT_CHARS - suffix.length - 10
-			);
-=======
 	const lines = prefix.split('\n');
 	const scopeEndIndex = lines.findIndex(line => line.trim() === '') + 1;
 	
@@ -350,14 +188,9 @@ function ensureContextLength(prefix: string, suffix: string): string {
 		} else {
 			// Only keep immediate context if scope takes too much space
 			return immediateContext.substring(0, MAX_CONTEXT_CHARS - suffix.length - 10);
->>>>>>> main
 		}
 	}
 
 	// Fallback: just trim the prefix
 	return prefix.substring(0, MAX_CONTEXT_CHARS - suffix.length - 10);
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> main

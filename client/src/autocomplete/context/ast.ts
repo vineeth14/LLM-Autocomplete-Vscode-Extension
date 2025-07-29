@@ -1,27 +1,16 @@
 /**
  * AST-BASED CONTEXT EXTRACTION (Currently Unused)
-<<<<<<< HEAD
- *
- * This file provides Tree-sitter based Python AST parsing for intelligent
- * context extraction. It's preserved for future use but currently inactive.
- *
-=======
  * 
  * This file provides Tree-sitter based Python AST parsing for intelligent
  * context extraction. It's preserved for future use but currently inactive.
  * 
->>>>>>> main
  * To enable: Uncomment imports in service.ts and use getScopedASTContext()
  */
 
 import * as Parser from "web-tree-sitter";
 import * as path from "path";
 import * as fs from "fs";
-<<<<<<< HEAD
 import { contextLog } from "../../extension";
-=======
-import { astLog } from "../../extension";
->>>>>>> main
 import { AutocompleteSnippet, ScopeLevel, SymbolType } from "./types";
 import { language } from "tree-sitter-python";
 
@@ -45,14 +34,7 @@ async function getQuery(nodeType: string): Promise<Parser.Query | undefined> {
 	try {
 		// Handle both source (development) and compiled (production) paths
 		const basePath = __dirname.includes("/out/")
-<<<<<<< HEAD
-			? path.join(
-					__dirname,
-					"../../../../../client/src/autocomplete/context"
-				)
-=======
 			? path.join(__dirname, "../../../../../client/src/autocomplete/context")
->>>>>>> main
 			: __dirname;
 
 		// Additional fallback for different project structures
@@ -129,11 +111,7 @@ export async function getAst(
 
 		return ast;
 	} catch (e) {
-<<<<<<< HEAD
-		// contextLog.appendLine(`[AST] Error during parsing: ${e}`);
-=======
-		astLog.appendLine(`[AST] Error during parsing: ${e}`);
->>>>>>> main
+		contextLog.appendLine(`[AST] Error during parsing: ${e}`);
 		return undefined;
 	}
 }
@@ -146,15 +124,9 @@ export async function getTreePathAtCursor(
 	// Built in tree sitter search to find deepest node at cursor
 	let cursorNode = ast.rootNode.descendantForIndex(cursorIndex);
 
-<<<<<<< HEAD
-	// contextLog.appendLine(
-	// 	`[TreePath] Cursor at byte ${cursorIndex}, line ${cursorLine}, found node: ${cursorNode.type}`
-	// );
-=======
-	astLog.appendLine(
+	contextLog.appendLine(
 		`[TreePath] Cursor at byte ${cursorIndex}, line ${cursorLine}, found node: ${cursorNode.type}`
 	);
->>>>>>> main
 
 	// Check if cursorNode is the module/root node (usually not what we want for code completion)
 	if (
@@ -162,40 +134,22 @@ export async function getTreePathAtCursor(
 		cursorNode.startIndex === 0 &&
 		cursorLine !== undefined
 	) {
-<<<<<<< HEAD
-		// contextLog.appendLine(
-		// 	`[TreePath] Module node found - finding function by line number`
-		// );
-
-		// Find all function definitions and check which one contains the cursor line
-		const functions = ast.rootNode.children.filter(
-			child => child.type === "function_definition"
-=======
-		astLog.appendLine(
+		contextLog.appendLine(
 			`[TreePath] Module node found - finding function by line number`
 		);
 
 		// Find all function definitions and check which one contains the cursor line
 		const functions = ast.rootNode.children.filter(
 			(child) => child.type === "function_definition"
->>>>>>> main
 		);
 
 		let targetFunction: Parser.SyntaxNode | null = null;
 		for (const func of functions) {
-<<<<<<< HEAD
-			// contextLog.appendLine(
-			// 	`[TreePath] Function ${
-			// 		func.children.find((c) => c.type === "identifier")?.text || "unknown"
-			// 	} spans lines ${func.startPosition.row}-${func.endPosition.row}`
-			// );
-=======
-			astLog.appendLine(
+			contextLog.appendLine(
 				`[TreePath] Function ${
 					func.children.find((c) => c.type === "identifier")?.text || "unknown"
 				} spans lines ${func.startPosition.row}-${func.endPosition.row}`
 			);
->>>>>>> main
 
 			// Check if cursor is within this function's range
 			if (
@@ -203,21 +157,12 @@ export async function getTreePathAtCursor(
 				cursorLine <= func.endPosition.row
 			) {
 				targetFunction = func;
-<<<<<<< HEAD
-				// contextLog.appendLine(
-				// 	`[TreePath] Cursor is inside function: ${
-				// 		func.children.find((c) => c.type === "identifier")?.text ||
-				// 		"unknown"
-				// 	}`
-				// );
-=======
-				astLog.appendLine(
+				contextLog.appendLine(
 					`[TreePath] Cursor is inside function: ${
 						func.children.find((c) => c.type === "identifier")?.text ||
 						"unknown"
 					}`
 				);
->>>>>>> main
 				break;
 			}
 		}
@@ -225,18 +170,10 @@ export async function getTreePathAtCursor(
 		if (targetFunction) {
 			// Find the most specific node within this function at cursor position
 			cursorNode =
-<<<<<<< HEAD
-				targetFunction.descendantForIndex(cursorIndex) ||
-				targetFunction;
-			// contextLog.appendLine(
-			// 	`[TreePath] Selected node: ${cursorNode.type} within target function`
-			// );
-=======
 				targetFunction.descendantForIndex(cursorIndex) || targetFunction;
-			astLog.appendLine(
+			contextLog.appendLine(
 				`[TreePath] Selected node: ${cursorNode.type} within target function`
 			);
->>>>>>> main
 		}
 	}
 
@@ -245,27 +182,15 @@ export async function getTreePathAtCursor(
 	let current = cursorNode;
 	while (current) {
 		path.unshift(current); // Append at start
-<<<<<<< HEAD
-		// contextLog.appendLine(
-		// 	`[TreePath] Adding to path: ${current.type} (${current.startPosition.row}:${current.startPosition.column})`
-		// );
-		current = current.parent;
-	}
-
-	// contextLog.appendLine(
-	// 	`[TreePath] Final path: ${path.map((n) => n.type).join(" -> ")}`
-	// );
-=======
-		astLog.appendLine(
+		contextLog.appendLine(
 			`[TreePath] Adding to path: ${current.type} (${current.startPosition.row}:${current.startPosition.column})`
 		);
 		current = current.parent;
 	}
 
-	astLog.appendLine(
+	contextLog.appendLine(
 		`[TreePath] Final path: ${path.map((n) => n.type).join(" -> ")}`
 	);
->>>>>>> main
 	return path;
 }
 
@@ -275,11 +200,7 @@ export async function getContextForPath(
 ): Promise<AutocompleteSnippet[]> {
 	const snippets: AutocompleteSnippet[] = [];
 
-<<<<<<< HEAD
-	const usefulNodes = astPath.filter(node => TYPES_TO_USE.has(node.type));
-=======
 	const usefulNodes = astPath.filter((node) => TYPES_TO_USE.has(node.type));
->>>>>>> main
 	// Only adding code from useful node types
 	for (const astNode of usefulNodes) {
 		const newSnippets = await getSnippetsForNode(filepath, astNode);
@@ -317,11 +238,7 @@ export async function getSnippetsForNode(
 		if (snippet) {
 			snippets.push(snippet);
 		} else {
-<<<<<<< HEAD
-			// contextLog.appendLine(`[SnippetsForNode] No snippet generated from match`);
-=======
-			astLog.appendLine(`[SnippetsForNode] No snippet generated from match`);
->>>>>>> main
+			contextLog.appendLine(`[SnippetsForNode] No snippet generated from match`);
 		}
 	}
 
@@ -358,12 +275,7 @@ function processProgram(
 	filepath: string
 ): AutocompleteSnippet | null {
 	// For imports, just return the import statement
-<<<<<<< HEAD
-	const importNode =
-		captureMap.get("import") || captureMap.get("from_import");
-=======
 	const importNode = captureMap.get("import") || captureMap.get("from_import");
->>>>>>> main
 	if (importNode) {
 		return {
 			content: importNode.text.trim(),
@@ -471,7 +383,3 @@ function processClassDefinition(
 
 	return null;
 }
-<<<<<<< HEAD
-=======
-
->>>>>>> main
