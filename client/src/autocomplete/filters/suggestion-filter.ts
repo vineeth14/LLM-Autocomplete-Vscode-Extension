@@ -232,16 +232,3 @@ function isPureConversationalLine(trimmed: string, lower: string): boolean {
 	);
 	return startsWithConversational || containsPostExplanation;
 }
-
-function isTemplateMarker(line: string): boolean {
-	const trimmed = line.trim().toLowerCase();
-	return (
-		EXACT_TEMPLATE_MARKERS.has(trimmed) ||
-		PARTIAL_TEMPLATE_MARKERS.some(marker => trimmed.includes(marker))
-	);
-}
-
-function isEmptyOrUseless(line: string): boolean {
-	const trimmed = line.trim();
-	return trimmed.length === 0 || USELESS_PATTERNS.includes(trimmed);
-}
