@@ -1,6 +1,6 @@
 /**
  * TYPE DEFINITIONS FOR CONTEXT SYSTEM
- * 
+ *
  * These types support both simple cursor-based context (currently active)
  * and sophisticated AST-based context extraction (currently inactive).
  */
@@ -63,22 +63,22 @@ export interface ContextResult {
 /**
  * Scope levels for hierarchical context
  */
-export type ScopeLevel = 
-	| "current"    // Current function/block
-	| "parent"     // Parent function (for nested functions)
-	| "class"      // Class scope
-	| "module";    // Module/file scope
+export type ScopeLevel =
+	| "current" // Current function/block
+	| "parent" // Parent function (for nested functions)
+	| "class" // Class scope
+	| "module"; // Module/file scope
 
 /**
  * Types of symbols available in scope
  */
 export type SymbolType =
-	| "function"   // Function definitions
-	| "method"     // Class methods  
-	| "variable"   // Variables/parameters
-	| "class"      // Class definitions
-	| "import"     // Import statements
-	| "property";  // Class properties
+	| "function" // Function definitions
+	| "method" // Class methods
+	| "variable" // Variables/parameters
+	| "class" // Class definitions
+	| "import" // Import statements
+	| "property"; // Class properties
 
 /**
  * Autocomplete snippet with scope information

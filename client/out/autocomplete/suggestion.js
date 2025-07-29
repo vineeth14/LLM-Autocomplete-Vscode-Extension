@@ -7,7 +7,7 @@ const http_1 = require("http");
 const dotenv = require("dotenv");
 const path = require("path");
 const suggestion_filter_1 = require("./filters/suggestion-filter");
-// Load environment variables from .env file  
+// Load environment variables from .env file
 dotenv.config({ path: path.join(__dirname, "../../.env") });
 const DEFAULT_PROVIDER = process.env.LLM_PROVIDER || "ollama";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;

@@ -12,7 +12,7 @@ import * as dotenv from "dotenv";
 import * as path from "path";
 import { filterSuggestion } from "./filters/suggestion-filter";
 
-// Load environment variables from .env file  
+// Load environment variables from .env file
 dotenv.config({ path: path.join(__dirname, "../../.env") });
 
 const DEFAULT_PROVIDER = process.env.LLM_PROVIDER || "ollama";
@@ -150,19 +150,19 @@ export async function getSuggestion(
 			token
 		);
 		const inferenceEnd = performance.now();
-		
+
 		let basicCleaned = rawSuggestion
 			.replace(/<fim_prefix>/g, "")
 			.replace(/<fim_suffix>/g, "")
 			.replace(/<fim_middle>/g, "")
 			.replace(/<\|[^|]*\|>/g, "")
 			.trim();
-		
+
 		const filteredSuggestion = filterSuggestion(basicCleaned);
-		
+
 		const inferenceTime = inferenceEnd - inferenceStart;
 		log.appendLine(`[Timing] Inference: ${inferenceTime.toFixed(1)}ms`);
-		
+
 		if (!filteredSuggestion) {
 			return undefined;
 		}
@@ -180,4 +180,3 @@ export async function getSuggestion(
 		return undefined;
 	}
 }
-

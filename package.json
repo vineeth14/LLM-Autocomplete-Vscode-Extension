@@ -39,8 +39,8 @@
 		"copy-queries": "mkdir -p client/out/autocomplete/context/languages/python/queries && cp client/src/autocomplete/context/languages/python/queries/*.scm client/out/autocomplete/context/languages/python/queries/",
 		"watch": "tsc -b -w",
 		"postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
-		"lint": "eslint . --ext .ts,.js",
-		"lint:fix": "eslint . --ext .ts,.js --fix",
+		"_lint": "eslint . --ext .ts,.js",
+		"_lint:fix": "eslint . --ext .ts,.js --fix",
 		"format": "prettier --write .",
 		"format:check": "prettier --check ."
 	},

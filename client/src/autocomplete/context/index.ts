@@ -1,6 +1,6 @@
 /**
  * Context Retrieval System
- * 
+ *
  * Currently uses simple cursor-based context extraction.
  * AST-based infrastructure is available but commented out.
  * See README.md for details on enabling AST context.
@@ -20,10 +20,10 @@ export type {
 } from "./types";
 
 // Currently unused - available for future AST-based context
-// export { 
-// 	prioritizeSnippets, 
-// 	formatSnippetsAsContext, 
-// 	buildScopeAwareContext 
+// export {
+// 	prioritizeSnippets,
+// 	formatSnippetsAsContext,
+// 	buildScopeAwareContext
 // } from "./formatters";
 
 // Currently unused - available for future AST-based context

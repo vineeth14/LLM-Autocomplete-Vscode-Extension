@@ -10,7 +10,11 @@ import {
 } from "vscode-languageclient/node";
 
 import { LLMInlineCompletionProvider } from "./autocomplete/LLMInlineCompletionProvider";
-import { runLatencyTests, runPartialCompletionTests, runFunctionCompletionTests } from "./tests/latency-test";
+import {
+	runLatencyTests,
+	runPartialCompletionTests,
+	runFunctionCompletionTests,
+} from "./tests/latency-test";
 
 let client: LanguageClient;
 
@@ -66,11 +70,24 @@ export function activate(context: ExtensionContext) {
 	context.subscriptions.push(disposable);
 
 	// Register latency test commands
-	const testCommand = vscode.commands.registerCommand('llm-autocomplete.runLatencyTests', runLatencyTests);
-	const partialTestCommand = vscode.commands.registerCommand('llm-autocomplete.runPartialTests', runPartialCompletionTests);
-	const functionTestCommand = vscode.commands.registerCommand('llm-autocomplete.runFunctionTests', runFunctionCompletionTests);
-	
-	context.subscriptions.push(testCommand, partialTestCommand, functionTestCommand);
+	const testCommand = vscode.commands.registerCommand(
+		"llm-autocomplete.runLatencyTests",
+		runLatencyTests
+	);
+	const partialTestCommand = vscode.commands.registerCommand(
+		"llm-autocomplete.runPartialTests",
+		runPartialCompletionTests
+	);
+	const functionTestCommand = vscode.commands.registerCommand(
+		"llm-autocomplete.runFunctionTests",
+		runFunctionCompletionTests
+	);
+
+	context.subscriptions.push(
+		testCommand,
+		partialTestCommand,
+		functionTestCommand
+	);
 }
 
 export function deactivate(): Thenable<void> | undefined {

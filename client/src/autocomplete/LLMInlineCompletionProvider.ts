@@ -39,7 +39,7 @@ export class LLMInlineCompletionProvider {
 		document: TextDocument,
 		position: Position,
 		inlineContext: InlineCompletionContext,
-		token: CancellationToken,
+		token: CancellationToken
 	): Promise<InlineCompletionItem[]> {
 		const totalStart = performance.now();
 
@@ -57,7 +57,7 @@ export class LLMInlineCompletionProvider {
 			if (cached) {
 				const userLatency = performance.now() - totalStart;
 				log.appendLine(
-					`[Cache Hit] User saw result in ${userLatency.toFixed(0)}ms (instant)`,
+					`[Cache Hit] User saw result in ${userLatency.toFixed(0)}ms (instant)`
 				);
 
 				// Store timing breakdown for instant cache hits
@@ -73,7 +73,7 @@ export class LLMInlineCompletionProvider {
 				return [
 					new InlineCompletionItem(
 						cached,
-						new Range(position, position),
+						new Range(position, position)
 					),
 				];
 			}
@@ -93,17 +93,17 @@ export class LLMInlineCompletionProvider {
 			const reuseStart = performance.now();
 			if (this.shouldReuseExistingGenerator(currentPrefix)) {
 				const remainingCompletion = this.previousCompletion.substring(
-					currentPrefix.length - this.previousGeneratorPrefix!.length,
+					currentPrefix.length - this.previousGeneratorPrefix!.length
 				);
 				if (remainingCompletion) {
 					const userLatency = performance.now() - userPerceptionStart;
 					log.appendLine(
-						`[Generator Reuse] User saw result in ${userLatency.toFixed(0)}ms`,
+						`[Generator Reuse] User saw result in ${userLatency.toFixed(0)}ms`
 					);
 					return [
 						new InlineCompletionItem(
 							remainingCompletion,
-							new Range(position, position),
+							new Range(position, position)
 						),
 					];
 				}
@@ -123,7 +123,7 @@ export class LLMInlineCompletionProvider {
 			const context: Parameters =
 				await this.contextRetrievalService.getContextForCompletion(
 					document,
-					position,
+					position
 				);
 			const contextEnd = performance.now();
 
@@ -148,7 +148,7 @@ export class LLMInlineCompletionProvider {
 			const lineCount = this.previousCompletion.split("\n").length;
 			const charCount = this.previousCompletion.length;
 			log.appendLine(
-				`[Completion] ${lineCount} lines, ${charCount} chars`,
+				`[Completion] ${lineCount} lines, ${charCount} chars`
 			);
 
 			const cachingStart = performance.now();
@@ -161,7 +161,7 @@ export class LLMInlineCompletionProvider {
 
 			const item = new InlineCompletionItem(
 				this.previousCompletion,
-				new Range(position, position),
+				new Range(position, position)
 			);
 
 			const totalEnd = performance.now();
@@ -177,11 +177,11 @@ export class LLMInlineCompletionProvider {
 			const totalTime = totalEnd - totalStart;
 
 			log.appendLine(
-				`[Timing] Debounce: ${debounceTime.toFixed(0)}ms | Cache: ${cacheTime.toFixed(0)}ms | Context: ${contextTime.toFixed(0)}ms | Network: ${networkTime.toFixed(0)}ms | Caching: ${cachingTime.toFixed(0)}ms`,
+				`[Timing] Debounce: ${debounceTime.toFixed(0)}ms | Cache: ${cacheTime.toFixed(0)}ms | Context: ${contextTime.toFixed(0)}ms | Network: ${networkTime.toFixed(0)}ms | Caching: ${cachingTime.toFixed(0)}ms`
 			);
 
 			log.appendLine(
-				`[User Latency] ${userLatency.toFixed(0)}ms (perceived after stopping typing)`,
+				`[User Latency] ${userLatency.toFixed(0)}ms (perceived after stopping typing)`
 			);
 
 			// Store timing breakdown for testing

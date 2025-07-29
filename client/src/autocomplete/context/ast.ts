@@ -1,9 +1,9 @@
 /**
  * AST-BASED CONTEXT EXTRACTION (Currently Unused)
- * 
+ *
  * This file provides Tree-sitter based Python AST parsing for intelligent
  * context extraction. It's preserved for future use but currently inactive.
- * 
+ *
  * To enable: Uncomment imports in service.ts and use getScopedASTContext()
  */
 
@@ -34,7 +34,10 @@ async function getQuery(nodeType: string): Promise<Parser.Query | undefined> {
 	try {
 		// Handle both source (development) and compiled (production) paths
 		const basePath = __dirname.includes("/out/")
-			? path.join(__dirname, "../../../../../client/src/autocomplete/context")
+			? path.join(
+					__dirname,
+					"../../../../../client/src/autocomplete/context"
+				)
 			: __dirname;
 
 		// Additional fallback for different project structures
@@ -140,7 +143,7 @@ export async function getTreePathAtCursor(
 
 		// Find all function definitions and check which one contains the cursor line
 		const functions = ast.rootNode.children.filter(
-			(child) => child.type === "function_definition"
+			child => child.type === "function_definition"
 		);
 
 		let targetFunction: Parser.SyntaxNode | null = null;
@@ -170,7 +173,8 @@ export async function getTreePathAtCursor(
 		if (targetFunction) {
 			// Find the most specific node within this function at cursor position
 			cursorNode =
-				targetFunction.descendantForIndex(cursorIndex) || targetFunction;
+				targetFunction.descendantForIndex(cursorIndex) ||
+				targetFunction;
 			// contextLog.appendLine(
 			// 	`[TreePath] Selected node: ${cursorNode.type} within target function`
 			// );
@@ -200,7 +204,7 @@ export async function getContextForPath(
 ): Promise<AutocompleteSnippet[]> {
 	const snippets: AutocompleteSnippet[] = [];
 
-	const usefulNodes = astPath.filter((node) => TYPES_TO_USE.has(node.type));
+	const usefulNodes = astPath.filter(node => TYPES_TO_USE.has(node.type));
 	// Only adding code from useful node types
 	for (const astNode of usefulNodes) {
 		const newSnippets = await getSnippetsForNode(filepath, astNode);
@@ -275,7 +279,8 @@ function processProgram(
 	filepath: string
 ): AutocompleteSnippet | null {
 	// For imports, just return the import statement
-	const importNode = captureMap.get("import") || captureMap.get("from_import");
+	const importNode =
+		captureMap.get("import") || captureMap.get("from_import");
 	if (importNode) {
 		return {
 			content: importNode.text.trim(),
@@ -383,4 +388,3 @@ function processClassDefinition(
 
 	return null;
 }
-

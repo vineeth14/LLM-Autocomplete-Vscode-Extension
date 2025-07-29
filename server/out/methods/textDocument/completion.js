@@ -16,11 +16,11 @@ const completion = (message) => {
     //extract the current word being typed (after the last non-word character).
     const currentPrefix = lineUntilCursor.replace(/.*\W(.*?)/, "$1");
     const items = words
-        .filter((word) => {
+        .filter(word => {
         return word.startsWith(currentPrefix);
     })
         .slice(0, 1000)
-        .map((word) => {
+        .map(word => {
         return { label: word };
     });
     log_1.default.write({

@@ -13,7 +13,7 @@ class RequestDebouncer {
         if (this.debounceTimeout) {
             clearTimeout(this.debounceTimeout);
         }
-        return new Promise((resolve) => {
+        return new Promise(resolve => {
             this.debounceTimeout = setTimeout(() => {
                 const shouldSkip = this.currentRequestId !== requestId;
                 resolve(shouldSkip);

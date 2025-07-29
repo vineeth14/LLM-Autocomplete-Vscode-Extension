@@ -45,30 +45,41 @@ const USELESS_PATTERNS = [""];
 
 // Pre-compiled regexes for performance
 const FIM_TOKEN_REGEXES = FIM_TOKENS.map(
-	(token) => new RegExp(escapeRegex(token), "g"),
+	token => new RegExp(escapeRegex(token), "g")
 );
 
 const CONVERSATIONAL_START_REGEXES = CONVERSATIONAL_START_PHRASES.map(
-	(phrase) => new RegExp(`^\\s*${escapeRegex(phrase)}\\s*`, "gmi"),
+	phrase => new RegExp(`^\\s*${escapeRegex(phrase)}\\s*`, "gmi")
 );
 
 function rewritesLineAbove(
 	suggestionLines: string[],
-	contextPrefix: string,
+	contextPrefix: string
 ): boolean {
 	const prefixLines = contextPrefix.split("\n");
 	const lastMeaningfulPrefix = prefixLines
 		.reverse()
-		.find((line) => line.trim().length > 0);
+		.find(line => line.trim().length > 0);
 	const firstMeaningfulSuggestion = suggestionLines.find(
-		(line) => line.trim().length > 0,
+		line => line.trim().length > 0
 	);
 	if (!lastMeaningfulPrefix || !firstMeaningfulSuggestion) return false;
 	const distance = levenshtein.get(
 		lastMeaningfulPrefix.trim(),
-		firstMeaningfulSuggestion.trim(),
+		firstMeaningfulSuggestion.trim()
 	);
 	return distance < Math.max(5, lastMeaningfulPrefix.length * 0.1);
+}
+// Prevent infinite loop repititions
+function stopAtRepeatingLines(lines: string[]): string[] {
+	if (lines.length < 3) return lines;
+	for (let i = 0; i <= lines.length - 3; i++) {
+		if (lines[i] === lines[i + 1] && lines[i + 1] === lines[i + 2]) {
+			// if identical lines found, return first occurence only
+			return lines.slice(0, i + 1);
+		}
+	}
+	return lines;
 }
 
 /* Use cases:
@@ -99,19 +110,19 @@ function isExtremeRepetition(lines: string[]): boolean {
 	if (lines.length < 4) return false;
 
 	const meaningfulLines = lines
-		.map((line) => line.trim())
-		.filter((line) => line.length > 5); // Skip very short lines
+		.map(line => line.trim())
+		.filter(line => line.length > 5); // Skip very short lines
 
 	if (meaningfulLines.length < 4) return false;
 
 	const similarities = meaningfulLines.flatMap((line1, i) =>
 		meaningfulLines
 			.slice(i + 1)
-			.map((line2) => calculateSimilarity(line1, line2)),
+			.map(line2 => calculateSimilarity(line1, line2))
 	);
 
 	const highSimilarityCount = similarities.filter(
-		(similarity) => similarity > 0.8,
+		similarity => similarity > 0.8
 	).length;
 	const repetitionRatio = highSimilarityCount / similarities.length;
 
@@ -135,7 +146,7 @@ function escapeRegex(string: string): string {
 
 export function filterSuggestion(
 	rawSuggestion: string,
-	contextPrefix?: string,
+	contextPrefix?: string
 ): string | undefined {
 	let cleaned = cleanTokensAndPhrases(rawSuggestion);
 	const lines = cleaned.split("\n");
@@ -150,6 +161,10 @@ export function filterSuggestion(
 	if (isExtremeRepetition(filteredLines)) {
 		return undefined;
 	}
+	const nonRepeatingLines = stopAtRepeatingLines(filteredLines);
+	if (nonRepeatingLines.length === 0) {
+		return undefined;
+	}
 	const result = filteredLines.join("\n").trim();
 	return result;
 }
@@ -157,10 +172,10 @@ export function filterSuggestion(
 function cleanTokensAndPhrases(text: string): string {
 	let cleaned = text;
 	// Use pre-compiled regexes
-	FIM_TOKEN_REGEXES.forEach((regex) => {
+	FIM_TOKEN_REGEXES.forEach(regex => {
 		cleaned = cleaned.replace(regex, "");
 	});
-	CONVERSATIONAL_START_REGEXES.forEach((regex) => {
+	CONVERSATIONAL_START_REGEXES.forEach(regex => {
 		cleaned = cleaned.replace(regex, "");
 	});
 	return cleaned;
@@ -196,8 +211,8 @@ function shouldSkipLineBeforeCode(trimmed: string, lower: string): boolean {
 	if (trimmed.startsWith("```")) return true;
 	// Fast exact lookup using Set + partial matching using array
 	const hasExactMarker = EXACT_TEMPLATE_MARKERS.has(lower);
-	const hasPartialMarker = PARTIAL_TEMPLATE_MARKERS.some((marker) =>
-		lower.includes(marker),
+	const hasPartialMarker = PARTIAL_TEMPLATE_MARKERS.some(marker =>
+		lower.includes(marker)
 	);
 	return (
 		hasExactMarker ||
@@ -209,11 +224,11 @@ function shouldSkipLineBeforeCode(trimmed: string, lower: string): boolean {
 function isPureConversationalLine(trimmed: string, lower: string): boolean {
 	if (!trimmed) return false;
 	// Use arrays directly for partial matching
-	const startsWithConversational = CONVERSATIONAL_START_PHRASES.some(
-		(phrase) => lower.startsWith(phrase),
+	const startsWithConversational = CONVERSATIONAL_START_PHRASES.some(phrase =>
+		lower.startsWith(phrase)
 	);
-	const containsPostExplanation = CONVERSATIONAL_POST_PHRASES.some((phrase) =>
-		lower.includes(phrase),
+	const containsPostExplanation = CONVERSATIONAL_POST_PHRASES.some(phrase =>
+		lower.includes(phrase)
 	);
 	return startsWithConversational || containsPostExplanation;
 }
@@ -222,7 +237,7 @@ function isTemplateMarker(line: string): boolean {
 	const trimmed = line.trim().toLowerCase();
 	return (
 		EXACT_TEMPLATE_MARKERS.has(trimmed) ||
-		PARTIAL_TEMPLATE_MARKERS.some((marker) => trimmed.includes(marker))
+		PARTIAL_TEMPLATE_MARKERS.some(marker => trimmed.includes(marker))
 	);
 }
 

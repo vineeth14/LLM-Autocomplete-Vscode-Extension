@@ -5,7 +5,7 @@ exports.initialize = void 0;
 const initialize = (message) => {
     return {
         capabilities: {
-            textDocumentSync: 1
+            textDocumentSync: 1,
         },
         serverInfo: {
             name: "llm-autocomplete",

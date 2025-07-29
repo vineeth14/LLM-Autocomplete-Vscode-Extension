@@ -84,7 +84,9 @@ class LatencyTester {
                     try {
                         const cacheItems = await this.provider.provideInlineCompletionItems(document, position, context, {
                             isCancellationRequested: false,
-                            onCancellationRequested: () => ({ dispose: () => { } }),
+                            onCancellationRequested: () => ({
+                                dispose: () => { },
+                            }),
                         });
                         const cacheEndTime = performance.now();
                         const cacheLatency = cacheEndTime - cacheStartTime;
@@ -95,7 +97,7 @@ class LatencyTester {
                     }
                 }
                 // Wait a bit between tests to avoid overwhelming
-                await new Promise((resolve) => setTimeout(resolve, 500));
+                await new Promise(resolve => setTimeout(resolve, 500));
             }
             catch (error) {
                 const endTime = performance.now();
@@ -152,7 +154,7 @@ class LatencyTester {
                     this.log(`   💡 Function body: "${result.suggestion.substring(0, 100)}..."`);
                 }
                 // Wait longer between function tests as they're more complex
-                await new Promise((resolve) => setTimeout(resolve, 1500));
+                await new Promise(resolve => setTimeout(resolve, 1500));
             }
             catch (error) {
                 const endTime = performance.now();
@@ -169,11 +171,11 @@ class LatencyTester {
     printSummary() {
         this.log("\n📊 LATENCY TEST SUMMARY");
         this.log("=".repeat(50));
-        const latencies = this.results.map((r) => r.latency);
-        const successCount = this.results.filter((r) => r.success).length;
-        const failedTests = this.results.filter((r) => !r.success);
-        const slowTests = this.results.filter((r) => r.latency > 500);
-        const successfulResults = this.results.filter((r) => r.success && r.breakdown);
+        const latencies = this.results.map(r => r.latency);
+        const successCount = this.results.filter(r => r.success).length;
+        const failedTests = this.results.filter(r => !r.success);
+        const slowTests = this.results.filter(r => r.latency > 500);
+        const successfulResults = this.results.filter(r => r.success && r.breakdown);
         this.log(`Tests run: ${this.results.length}`);
         this.log(`Success rate: ${((successCount / this.results.length) * 100).toFixed(1)}%`);
         this.log(`Average latency: ${this.average(latencies).toFixed(1)}ms`);
@@ -207,7 +209,7 @@ class LatencyTester {
             failedTests.forEach((test, i) => {
                 this.log(`${i + 1}. ${test.position}`);
             });
-            if (failedTests.some((t) => t.position.includes("math."))) {
+            if (failedTests.some(t => t.position.includes("math."))) {
                 this.log("\n💡 Suggestion: Failed math. completion indicates import context missing");
                 this.log("   - Check if imports are being included in context for Python files");
                 this.log("   - Verify import cache is working (uses MD5 hash of first 1000 chars)");
@@ -226,7 +228,7 @@ class LatencyTester {
             this.log("   - Consider if num_predict=12 is sufficient for completions");
         }
         // Open the log file in VSCode
-        vscode.workspace.openTextDocument(this.logFile).then((doc) => {
+        vscode.workspace.openTextDocument(this.logFile).then(doc => {
             vscode.window.showTextDocument(doc);
         });
     }
@@ -242,7 +244,7 @@ class LatencyTester {
     }
     variance(numbers) {
         const avg = this.average(numbers);
-        return this.average(numbers.map((x) => Math.pow(x - avg, 2)));
+        return this.average(numbers.map(x => Math.pow(x - avg, 2)));
     }
 }
 exports.LatencyTester = LatencyTester;

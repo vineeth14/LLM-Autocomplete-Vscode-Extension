@@ -14,7 +14,7 @@ const respond = (id, result) => {
     process.stdout.write(header + message); // Send json rpc method to client
 };
 let buffer = "";
-process.stdin.on("data", (chunk) => {
+process.stdin.on("data", chunk => {
     buffer += chunk;
     while (true) {
         const lengthMatch = buffer.match(/Content-Length: (\d+)\r\n/);

@@ -11,10 +11,10 @@ exports.ContextRetrievalService = void 0;
 var service_1 = require("./service");
 Object.defineProperty(exports, "ContextRetrievalService", { enumerable: true, get: function () { return service_1.ContextRetrievalService; } });
 // Currently unused - available for future AST-based context
-// export { 
-// 	prioritizeSnippets, 
-// 	formatSnippetsAsContext, 
-// 	buildScopeAwareContext 
+// export {
+// 	prioritizeSnippets,
+// 	formatSnippetsAsContext,
+// 	buildScopeAwareContext
 // } from "./formatters";
 // Currently unused - available for future AST-based context
 // export const DEFAULT_CONTEXT_CONFIG = {

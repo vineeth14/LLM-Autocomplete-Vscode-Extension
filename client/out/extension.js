@@ -44,9 +44,9 @@ function activate(context) {
     const disposable = vscode_1.languages.registerInlineCompletionItemProvider({ pattern: "**" }, provider);
     context.subscriptions.push(disposable);
     // Register latency test commands
-    const testCommand = vscode.commands.registerCommand('llm-autocomplete.runLatencyTests', latency_test_1.runLatencyTests);
-    const partialTestCommand = vscode.commands.registerCommand('llm-autocomplete.runPartialTests', latency_test_1.runPartialCompletionTests);
-    const functionTestCommand = vscode.commands.registerCommand('llm-autocomplete.runFunctionTests', latency_test_1.runFunctionCompletionTests);
+    const testCommand = vscode.commands.registerCommand("llm-autocomplete.runLatencyTests", latency_test_1.runLatencyTests);
+    const partialTestCommand = vscode.commands.registerCommand("llm-autocomplete.runPartialTests", latency_test_1.runPartialCompletionTests);
+    const functionTestCommand = vscode.commands.registerCommand("llm-autocomplete.runFunctionTests", latency_test_1.runFunctionCompletionTests);
     context.subscriptions.push(testCommand, partialTestCommand, functionTestCommand);
 }
 function deactivate() {

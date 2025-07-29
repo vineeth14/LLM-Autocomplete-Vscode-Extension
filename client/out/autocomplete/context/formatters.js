@@ -19,11 +19,11 @@ function prioritizeSnippets(snippets) {
     const relevantSnippets = filterRelevantSnippets(snippets);
     // Then prioritize the relevant ones
     const priorityOrder = {
-        "import": 1,
-        "current": 2,
-        "class": 3,
-        "parent": 4,
-        "module": 5
+        import: 1,
+        current: 2,
+        class: 3,
+        parent: 4,
+        module: 5,
     };
     return relevantSnippets.sort((a, b) => {
         const aPriority = priorityOrder[a.scopeLevel] || 99;
@@ -32,8 +32,15 @@ function prioritizeSnippets(snippets) {
             return aPriority - bPriority;
         }
         // Secondary sort by symbol type (functions before variables)
-        const symbolPriority = { "import": 1, "class": 2, "function": 3, "method": 4, "variable": 5 };
-        return (symbolPriority[a.symbolType] || 99) - (symbolPriority[b.symbolType] || 99);
+        const symbolPriority = {
+            import: 1,
+            class: 2,
+            function: 3,
+            method: 4,
+            variable: 5,
+        };
+        return ((symbolPriority[a.symbolType] || 99) -
+            (symbolPriority[b.symbolType] || 99));
     });
 }
 /**
@@ -45,12 +52,16 @@ function filterRelevantSnippets(snippets) {
     // Always keep current scope items (functions/classes where cursor is)
     const currentScope = snippets.filter(s => s.scopeLevel === "current");
     // Keep class scope items only if we're in a class (methods, properties)
-    const classScope = snippets.filter(s => s.scopeLevel === "class").slice(0, 3);
+    const classScope = snippets
+        .filter(s => s.scopeLevel === "class")
+        .slice(0, 3);
     // Be very selective with module-level items - only keep 1-2 most relevant
-    const moduleItems = snippets.filter(s => s.scopeLevel === "module" &&
+    const moduleItems = snippets
+        .filter(s => s.scopeLevel === "module" &&
         s.symbolType !== "import" &&
         // Prioritize functions over classes at module level
-        (s.symbolType === "function" || s.symbolType === "class")).slice(0, 1);
+        (s.symbolType === "function" || s.symbolType === "class"))
+        .slice(0, 1);
     return [...imports, ...currentScope, ...classScope, ...moduleItems];
 }
 /**
@@ -95,7 +106,9 @@ function buildScopeAwareContext(snippets, immediatePrefix, immediateSuffix) {
     const scopePrefix = formatSnippetsAsContext(deduplicatedSnippets);
     // Combine intelligently - scope context + clean immediate context
     const cleanedImmediate = removeRedundantFromImmediate(immediatePrefix, deduplicatedSnippets);
-    const combinedPrefix = scopePrefix ? `${scopePrefix}\n\n${cleanedImmediate}` : immediatePrefix;
+    const combinedPrefix = scopePrefix
+        ? `${scopePrefix}\n\n${cleanedImmediate}`
+        : immediatePrefix;
     const trimmedPrefix = ensureContextLength(combinedPrefix, immediateSuffix);
     return {
         prefix: trimmedPrefix,
@@ -119,17 +132,19 @@ function removeDuplicates(snippets, immediateContext) {
  * Remove redundant lines from immediate context that are covered by AST snippets
  */
 function removeRedundantFromImmediate(immediatePrefix, snippets) {
-    const lines = immediatePrefix.split('\n');
-    const importLines = snippets.filter(s => s.symbolType === "import").map(s => s.content.trim());
+    const lines = immediatePrefix.split("\n");
+    const importLines = snippets
+        .filter(s => s.symbolType === "import")
+        .map(s => s.content.trim());
     // Remove import lines that are already in AST snippets
     const cleanedLines = lines.filter(line => {
         const trimmed = line.trim();
-        if (trimmed.startsWith('import ') || trimmed.startsWith('from ')) {
+        if (trimmed.startsWith("import ") || trimmed.startsWith("from ")) {
             return !importLines.some(importLine => importLine === trimmed);
         }
         return true;
     });
-    return cleanedLines.join('\n');
+    return cleanedLines.join("\n");
 }
 /**
  * Ensure total context length stays within reasonable limits for LLM performance
@@ -142,15 +157,17 @@ function ensureContextLength(prefix, suffix) {
         return prefix;
     }
     // If too long, prioritize immediate context over scope context
-    const lines = prefix.split('\n');
-    const scopeEndIndex = lines.findIndex(line => line.trim() === '') + 1;
+    const lines = prefix.split("\n");
+    const scopeEndIndex = lines.findIndex(line => line.trim() === "") + 1;
     if (scopeEndIndex > 0 && scopeEndIndex < lines.length) {
         // Keep immediate context, trim scope context
-        const immediateContext = lines.slice(scopeEndIndex).join('\n');
+        const immediateContext = lines.slice(scopeEndIndex).join("\n");
         const availableForScope = MAX_CONTEXT_CHARS - suffix.length - immediateContext.length - 10;
         if (availableForScope > 200) {
-            const scopeContext = lines.slice(0, scopeEndIndex).join('\n');
-            return scopeContext.substring(0, availableForScope) + '\n\n' + immediateContext;
+            const scopeContext = lines.slice(0, scopeEndIndex).join("\n");
+            return (scopeContext.substring(0, availableForScope) +
+                "\n\n" +
+                immediateContext);
         }
         else {
             // Only keep immediate context if scope takes too much space

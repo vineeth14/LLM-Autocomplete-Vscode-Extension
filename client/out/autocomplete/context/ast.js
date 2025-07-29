@@ -91,7 +91,7 @@ async function getTreePathAtCursor(ast, cursorIndex, cursorLine) {
         // 	`[TreePath] Module node found - finding function by line number`
         // );
         // Find all function definitions and check which one contains the cursor line
-        const functions = ast.rootNode.children.filter((child) => child.type === "function_definition");
+        const functions = ast.rootNode.children.filter(child => child.type === "function_definition");
         let targetFunction = null;
         for (const func of functions) {
             // contextLog.appendLine(
@@ -115,7 +115,8 @@ async function getTreePathAtCursor(ast, cursorIndex, cursorLine) {
         if (targetFunction) {
             // Find the most specific node within this function at cursor position
             cursorNode =
-                targetFunction.descendantForIndex(cursorIndex) || targetFunction;
+                targetFunction.descendantForIndex(cursorIndex) ||
+                    targetFunction;
             // contextLog.appendLine(
             // 	`[TreePath] Selected node: ${cursorNode.type} within target function`
             // );
@@ -138,7 +139,7 @@ async function getTreePathAtCursor(ast, cursorIndex, cursorLine) {
 }
 async function getContextForPath(filepath, astPath) {
     const snippets = [];
-    const usefulNodes = astPath.filter((node) => TYPES_TO_USE.has(node.type));
+    const usefulNodes = astPath.filter(node => TYPES_TO_USE.has(node.type));
     // Only adding code from useful node types
     for (const astNode of usefulNodes) {
         const newSnippets = await getSnippetsForNode(filepath, astNode);

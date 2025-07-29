@@ -11,8 +11,8 @@ interface InitializeResult {
 // textDocumentSync:1 -> documents are synced by always sending the full content of the document
 export const initialize = (message: RequestMessage): InitializeResult => {
 	return {
-		capabilities: { 
-			textDocumentSync: 1 
+		capabilities: {
+			textDocumentSync: 1,
 		},
 		serverInfo: {
 			name: "llm-autocomplete",
