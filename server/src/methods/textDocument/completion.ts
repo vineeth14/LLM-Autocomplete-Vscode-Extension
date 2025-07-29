@@ -36,11 +36,11 @@ export const completion = (message: RequestMessage): CompletionList | null => {
 	const currentPrefix = lineUntilCursor.replace(/.*\W(.*?)/, "$1");
 
 	const items = words
-		.filter((word) => {
+		.filter(word => {
 			return word.startsWith(currentPrefix);
 		})
 		.slice(0, 1000)
-		.map((word) => {
+		.map(word => {
 			return { label: word };
 		});
 	log.write({

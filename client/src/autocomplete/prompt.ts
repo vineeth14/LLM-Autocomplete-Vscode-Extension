@@ -1,17 +1,44 @@
 import { start } from "repl";
 import { log } from "../extension";
 import { Parameters, AutocompleteTemplate, PromptResult } from "./types";
+import * as dotenv from "dotenv";
+import * as path from "path";
+
+// Load environment variables
+dotenv.config({ path: path.join(__dirname, "../../.env") });
 
 // StarCoder FIM template (for reference)
 const starcoderFimTemplate: AutocompleteTemplate = {
-  template: "<fim_prefix>{{{prefix}}}<fim_suffix>{{{suffix}}}<fim_middle>",
-  completionOptions: {
-    temperature: 0.1,
-    top_p: 0.95,
-    num_predict: 50,
-    repeat_penalty: 1.1,
-    stop: ["<fim_prefix>", "<fim_suffix>", "<fim_middle>", "\n\n"],
-  },
+	template: "<fim_prefix>{{{prefix}}}<fim_suffix>{{{suffix}}}<fim_middle>",
+	completionOptions: {
+		temperature: 0.1,
+		top_p: 0.95,
+		num_predict: 50,
+		repeat_penalty: 1.1,
+		stop: ["<fim_prefix>", "<fim_suffix>", "<fim_middle>", "\n\n"],
+		provider: "ollama",
+	},
+};
+
+// Gemini completion template
+const geminiTemplate: AutocompleteTemplate = {
+	template: `Complete the following code. Only provide the completion, no explanations or extra text.
+
+Code before cursor:
+{{{prefix}}}
+
+Code after cursor:
+{{{suffix}}}
+
+Complete the code at the cursor position:`,
+	completionOptions: {
+		temperature: 0.1,
+		top_p: 0.95,
+		num_predict: 50,
+		repeat_penalty: 1.1,
+		stop: ["\n\n", "```", "Complete", "Code before", "Code after"],
+		provider: "gemini",
+	},
 };
 
 //const qwenFimTemplate: AutocompleteTemplate = {
@@ -26,26 +53,25 @@ const starcoderFimTemplate: AutocompleteTemplate = {
 // }//;
 
 export const systemPrompt = (parameters: Parameters | null): PromptResult => {
-  const prefix = parameters?.prefix || "";
-  const suffix = parameters?.suffix || "";
+	const prefix = parameters?.prefix || "";
+	const suffix = parameters?.suffix || "";
+	const provider = process.env.LLM_PROVIDER || "ollama";
 
-  // Use simple FIM template with just cursor context
-  const cleanPrefix = prefix.trim();
-  const cleanSuffix = suffix.trimEnd();
+	// Use simple FIM template with just cursor context
+	// Don't trim prefix to preserve indentation context
+	const cleanPrefix = prefix;
+	const cleanSuffix = suffix.trimEnd();
 
-  const prompt = starcoderFimTemplate.template
-    .replace("{{{prefix}}}", cleanPrefix)
-    .replace("{{{suffix}}}", cleanSuffix);
+	// Choose template based on provider
+	const template =
+		provider === "gemini" ? geminiTemplate : starcoderFimTemplate;
 
-  // Reduced logging - only log when needed for debugging
-  // log.appendLine("=== StarCoder PROMPT ===");
-  // log.appendLine(`Prefix: ${cleanPrefix}`);
-  // log.appendLine(`Suffix: ${cleanSuffix}`);
-  // log.appendLine(`Full prompt: ${prompt}`);
-  // log.appendLine("===================");
+	const prompt = template.template
+		.replace("{{{prefix}}}", cleanPrefix)
+		.replace("{{{suffix}}}", cleanSuffix);
 
-  return {
-    content: prompt,
-    options: starcoderFimTemplate.completionOptions,
-  };
+	return {
+		content: prompt,
+		options: template.completionOptions,
+	};
 };

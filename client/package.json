@@ -13,12 +13,18 @@
 		"vscode": "^1.75.0"
 	},
 	"dependencies": {
-		"vscode-languageclient": "^8.1.0",
-		"web-tree-sitter": "^0.21.0",
+		"dotenv": "^17.2.1",
+		"fast-levenshtein": "^3.0.0",
+		"js-lcs": "~1.0.1",
 		"tree-sitter-python": "^0.21.0",
-		"tree-sitter-wasms": "^0.1.11"
+		"tree-sitter-wasms": "^0.1.11",
+		"uuid": "^10.0.0",
+		"vscode-languageclient": "^8.1.0",
+		"web-tree-sitter": "^0.21.0"
 	},
 	"devDependencies": {
+		"@types/fast-levenshtein": "^0.0.4",
+		"@types/uuid": "^10.0.0",
 		"@types/vscode": "^1.81.0"
 	}
 }

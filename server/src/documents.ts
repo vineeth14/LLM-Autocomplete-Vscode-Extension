@@ -13,4 +13,10 @@ export interface VersionedTextDocumentIdentifier
 export interface TextDocumentContentChangeEvent {
 	text: string;
 }
+
+export interface TextDocumentItem extends TextDocumentIdentifier {
+	languageId: string;
+	version: number;
+	text: string;
+}
 export const documents = new Map<DocumentUri, DocumentBody>();
