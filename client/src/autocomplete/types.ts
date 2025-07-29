@@ -23,7 +23,10 @@ export interface CompletionOptions {
 	top_p?: number;
 	num_predict?: number;
 	repeat_penalty?: number;
+<<<<<<< HEAD
 	provider?: "ollama" | "gemini";
+=======
+>>>>>>> main
 }
 
 export interface OllamaResponse {
@@ -31,6 +34,7 @@ export interface OllamaResponse {
 	done: boolean;
 }
 
+<<<<<<< HEAD
 export interface GeminiResponse {
 	candidates: Array<{
 		content: {
@@ -51,3 +55,9 @@ export interface PromptResult {
 	content: string;
 	options: CompletionOptions;
 }
+=======
+export interface PromptResult {
+	content: string;
+	options: CompletionOptions;
+}
+>>>>>>> main
