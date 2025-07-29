@@ -30,6 +30,11 @@
 				"command": "llm-autocomplete.runFunctionTests",
 				"title": "Run Function Completion Tests",
 				"category": "LLM Autocomplete"
+			},
+			{
+				"command": "llm-autocomplete.runJudgeTests",
+				"title": "Run LLM Judge Quality Tests",
+				"category": "LLM Autocomplete"
 			}
 		]
 	},

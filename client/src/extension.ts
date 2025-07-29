@@ -15,6 +15,7 @@ import {
 	runPartialCompletionTests,
 	runFunctionCompletionTests,
 } from "./tests/latency-test";
+import { runLLMJudgeTests } from "./tests/llm-judge-test";
 
 let client: LanguageClient;
 
@@ -82,11 +83,16 @@ export function activate(context: ExtensionContext) {
 		"llm-autocomplete.runFunctionTests",
 		runFunctionCompletionTests
 	);
+	const judgeTestCommand = vscode.commands.registerCommand(
+		"llm-autocomplete.runJudgeTests",
+		runLLMJudgeTests
+	);
 
 	context.subscriptions.push(
 		testCommand,
 		partialTestCommand,
-		functionTestCommand
+		functionTestCommand,
+		judgeTestCommand
 	);
 }
 
