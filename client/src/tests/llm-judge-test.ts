@@ -24,7 +24,7 @@ export class LLMJudgeTester {
 
 	private async callJudgeModel(prompt: string): Promise<string> {
 		const ollamaUrl = process.env.OLLAMA_URL || "http://localhost:11434";
-		
+
 		try {
 			const response = await fetch(`${ollamaUrl}/api/generate`, {
 				method: "POST",
@@ -45,10 +45,12 @@ export class LLMJudgeTester {
 			});
 
 			if (!response.ok) {
-				throw new Error(`Judge API error: ${response.status} ${response.statusText}`);
+				throw new Error(
+					`Judge API error: ${response.status} ${response.statusText}`
+				);
 			}
 
-			const data = await response.json() as { response?: string };
+			const data = (await response.json()) as { response?: string };
 			return data.response || "";
 		} catch (error) {
 			this.log(`   ❌ Judge API call failed: ${error}`);
@@ -63,8 +65,12 @@ export class LLMJudgeTester {
 			"🤖 LLM Judge Quality Test Results\n" + "=".repeat(50) + "\n\n"
 		);
 
-		this.log(`🔍 Testing suggestion quality with ${this.judgeModel} as judge...`);
-		this.log(`📊 Judge Model: ${this.judgeModel} (separate from completion model)\n`);
+		this.log(
+			`🔍 Testing suggestion quality with ${this.judgeModel} as judge...`
+		);
+		this.log(
+			`📊 Judge Model: ${this.judgeModel} (separate from completion model)\n`
+		);
 
 		// 8 scenarios focused on scope understanding and function awareness
 		const testCases = [
@@ -73,57 +79,64 @@ export class LLMJudgeTester {
 				char: 16,
 				scenario: "API response method",
 				desc: "data = response.",
-				expectedContext: "Common API response methods like .json(), .text(), .status_code"
+				expectedContext:
+					"Common API response methods like .json(), .text(), .status_code",
 			},
 			{
 				line: 14,
 				char: 18,
 				scenario: "Dictionary key access",
-				desc: 'email = user_data[',
-				expectedContext: "Dictionary key completion with context from defined keys"
+				desc: "email = user_data[",
+				expectedContext:
+					"Dictionary key completion with context from defined keys",
 			},
 			{
 				line: 18,
 				char: 36,
 				scenario: "List comprehension condition",
 				desc: "even_numbers = [x for x in numbers if x ",
-				expectedContext: "Filtering condition for even numbers (% 2 == 0)"
+				expectedContext:
+					"Filtering condition for even numbers (% 2 == 0)",
 			},
 			{
 				line: 23,
 				char: 29,
 				scenario: "F-string variable reference",
 				desc: 'message = f"Hello {name}, you are {',
-				expectedContext: "Variable reference in f-string with available variables"
+				expectedContext:
+					"Variable reference in f-string with available variables",
 			},
 			{
 				line: 28,
 				char: 4,
 				scenario: "Empty bubble sort implementation",
 				desc: "def bubble_sort(arr: List[int]) -> List[int]:\n    ",
-				expectedContext: "Complete bubble sort algorithm from scratch"
+				expectedContext: "Complete bubble sort algorithm from scratch",
 			},
 			{
 				line: 35,
 				char: 4,
 				scenario: "Graph DFS nested logic",
 				desc: "def find_path_dfs(...):\n    if visited is None:\n        visited = set()\n    ",
-				expectedContext: "Recursive DFS implementation with nested calls"
+				expectedContext:
+					"Recursive DFS implementation with nested calls",
 			},
 			{
 				line: 40,
 				char: 29,
 				scenario: "Function call with scope awareness",
 				desc: "sorted_scores = bubble_sort(",
-				expectedContext: "Calling previously defined bubble_sort function"
+				expectedContext:
+					"Calling previously defined bubble_sort function",
 			},
 			{
 				line: 44,
 				char: 47,
 				scenario: "Lambda dictionary access",
 				desc: "top_users = list(filter(lambda user: user[",
-				expectedContext: "Dictionary key access in lambda with context knowledge"
-			}
+				expectedContext:
+					"Dictionary key access in lambda with context knowledge",
+			},
 		];
 
 		// Open the test file
@@ -156,7 +169,7 @@ export class LLMJudgeTester {
 				);
 
 				const suggestion = items?.[0]?.insertText?.toString() || "";
-				
+
 				if (!suggestion) {
 					this.results.push({
 						scenario: testCase.scenario,
@@ -173,7 +186,7 @@ export class LLMJudgeTester {
 
 				// Get context around the position for the judge
 				const contextLines = this.getContextLines(document, position);
-				
+
 				// Ask LLM to judge the quality
 				const judgment = await this.judgeSuggestion(
 					contextLines,
@@ -219,43 +232,49 @@ export class LLMJudgeTester {
 		this.printJudgeSummary();
 	}
 
-	private getContextLines(document: vscode.TextDocument, position: vscode.Position): string {
+	private getContextLines(
+		document: vscode.TextDocument,
+		position: vscode.Position
+	): string {
 		// Enhanced context extraction for better judge information
 		const startLine = Math.max(0, position.line - 5); // More context
 		const endLine = Math.min(document.lineCount - 1, position.line + 3);
-		
+
 		let context = "";
-		
+
 		// Add imports and key definitions first
 		const imports: string[] = [];
 		const variables: string[] = [];
-		
+
 		for (let i = 0; i < Math.min(20, document.lineCount); i++) {
 			const line = document.lineAt(i).text.trim();
-			if (line.startsWith('import ') || line.startsWith('from ')) {
+			if (line.startsWith("import ") || line.startsWith("from ")) {
 				imports.push(line);
 			}
-			if (line.includes(' = ') && !line.startsWith('#')) {
+			if (line.includes(" = ") && !line.startsWith("#")) {
 				const varMatch = line.match(/(\w+)\s*=/);
 				if (varMatch) variables.push(varMatch[1]);
 			}
 		}
-		
+
 		if (imports.length > 0) {
-			context += "IMPORTS:\n" + imports.join('\n') + "\n\n";
+			context += "IMPORTS:\n" + imports.join("\n") + "\n\n";
 		}
-		
+
 		if (variables.length > 0) {
-			context += "AVAILABLE VARIABLES: " + variables.slice(0, 10).join(', ') + "\n\n";
+			context +=
+				"AVAILABLE VARIABLES: " +
+				variables.slice(0, 10).join(", ") +
+				"\n\n";
 		}
-		
+
 		context += "CODE CONTEXT:\n";
 		for (let i = startLine; i <= endLine; i++) {
 			const line = document.lineAt(i).text;
 			const marker = i === position.line ? " <-- CURSOR HERE" : "";
 			context += `${i + 1}: ${line}${marker}\n`;
 		}
-		
+
 		return context;
 	}
 
@@ -275,24 +294,32 @@ SCORE: [number]
 WHY: [short reason]`;
 
 		try {
-			this.log(`   🤖 Sending to ${this.judgeModel} judge (${judgePrompt.length} chars)...`);
+			this.log(
+				`   🤖 Sending to ${this.judgeModel} judge (${judgePrompt.length} chars)...`
+			);
 			const response = await this.callJudgeModel(judgePrompt);
-			this.log(`   📥 Judge response: "${response || 'NULL'}"`);
-			
+			this.log(`   📥 Judge response: "${response || "NULL"}"`);
+
 			if (!response || response.trim() === "") {
 				return {
 					score: 5,
-					reasoning: "Empty response from judge model"
+					reasoning: "Empty response from judge model",
 				};
 			}
-			
+
 			// Parse the response - optimized for short format
-			const scoreMatch = response.match(/SCORE:\s*(\d+)/i) || response.match(/(\d+)\/10/) || response.match(/\b([1-9]|10)\b/);
-			const reasoningMatch = response.match(/WHY:\s*(.+)/i) || response.match(/REASONING:\s*(.+)/i) || response.match(/because\s+(.+)/i);
-			
+			const scoreMatch =
+				response.match(/SCORE:\s*(\d+)/i) ||
+				response.match(/(\d+)\/10/) ||
+				response.match(/\b([1-9]|10)\b/);
+			const reasoningMatch =
+				response.match(/WHY:\s*(.+)/i) ||
+				response.match(/REASONING:\s*(.+)/i) ||
+				response.match(/because\s+(.+)/i);
+
 			let score = 5;
 			let reasoning = "Unable to parse judgment from response";
-			
+
 			if (scoreMatch) {
 				score = parseInt(scoreMatch[1]);
 				this.log(`   ✅ Parsed score: ${score}`);
@@ -305,7 +332,7 @@ WHY: [short reason]`;
 					this.log(`   🔍 Found fallback score: ${score}`);
 				}
 			}
-			
+
 			if (reasoningMatch) {
 				reasoning = reasoningMatch[1].trim();
 				this.log(`   ✅ Parsed reasoning: "${reasoning}"`);
@@ -317,16 +344,16 @@ WHY: [short reason]`;
 					this.log(`   🔍 Using fallback reasoning: "${reasoning}"`);
 				}
 			}
-			
+
 			return {
 				score: Math.max(1, Math.min(10, score)), // Clamp between 1-10
-				reasoning
+				reasoning,
 			};
 		} catch (error) {
 			this.log(`   ❌ Judge error: ${error}`);
 			return {
 				score: 5,
-				reasoning: `Judge error: ${error}`
+				reasoning: `Judge error: ${error}`,
 			};
 		}
 	}
@@ -345,7 +372,7 @@ WHY: [short reason]`;
 
 		const scores = this.results.filter(r => r.success).map(r => r.score);
 		const successfulTests = this.results.filter(r => r.success).length;
-		
+
 		if (scores.length === 0) {
 			this.log("❌ No successful tests to analyze");
 			return;
@@ -354,7 +381,7 @@ WHY: [short reason]`;
 		const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
 		const maxScore = Math.max(...scores);
 		const minScore = Math.min(...scores);
-		
+
 		const excellent = scores.filter(s => s >= 9).length;
 		const good = scores.filter(s => s >= 7 && s < 9).length;
 		const fair = scores.filter(s => s >= 5 && s < 7).length;
@@ -371,20 +398,33 @@ WHY: [short reason]`;
 		const timeWastingCompletions = scores.filter(s => s <= 3).length;
 
 		this.log(`\n🎯 COMPLETION EFFECTIVENESS:`);
-		this.log(`   Time-saving completions (7-10): ${appropriateCompletions}/${scores.length} (${((appropriateCompletions/scores.length)*100).toFixed(1)}%)`);
-		this.log(`   Usable completions (6+): ${usableCompletions}/${scores.length} (${((usableCompletions/scores.length)*100).toFixed(1)}%)`);
-		this.log(`   Time-wasting completions (1-3): ${timeWastingCompletions}/${scores.length} (${((timeWastingCompletions/scores.length)*100).toFixed(1)}%)`);
+		this.log(
+			`   Time-saving completions (7-10): ${appropriateCompletions}/${scores.length} (${((appropriateCompletions / scores.length) * 100).toFixed(1)}%)`
+		);
+		this.log(
+			`   Usable completions (6+): ${usableCompletions}/${scores.length} (${((usableCompletions / scores.length) * 100).toFixed(1)}%)`
+		);
+		this.log(
+			`   Time-wasting completions (1-3): ${timeWastingCompletions}/${scores.length} (${((timeWastingCompletions / scores.length) * 100).toFixed(1)}%)`
+		);
 
-		const completionGrade = appropriateCompletions/scores.length >= 0.8 ? "EXCELLENT" : 
-								usableCompletions/scores.length >= 0.7 ? "GOOD" :
-								timeWastingCompletions/scores.length <= 0.2 ? "FAIR" : "POOR";
+		const completionGrade =
+			appropriateCompletions / scores.length >= 0.8
+				? "EXCELLENT"
+				: usableCompletions / scores.length >= 0.7
+					? "GOOD"
+					: timeWastingCompletions / scores.length <= 0.2
+						? "FAIR"
+						: "POOR";
 		this.log(`\n📝 Completion System Grade: ${completionGrade}`);
 
 		// Detailed results
 		this.log("\n📋 DETAILED JUDGE RESULTS");
 		this.log("=".repeat(40));
 		this.results.forEach((result, i) => {
-			const emoji = result.success ? this.getScoreEmoji(result.score) : "❌";
+			const emoji = result.success
+				? this.getScoreEmoji(result.score)
+				: "❌";
 			this.log(`\n${i + 1}. ${emoji} ${result.scenario}`);
 			this.log(`   Position: ${result.position}`);
 			this.log(`   Suggestion: "${result.suggestion}"`);
@@ -399,46 +439,69 @@ WHY: [short reason]`;
 		// Completion-specific insights
 		this.log("\n💡 ACTIONABLE COMPLETION INSIGHTS");
 		this.log("=".repeat(40));
-		
+
 		// Analyze by scenario type
 		const scenarioPerformance = new Map<string, number[]>();
-		this.results.filter(r => r.success).forEach(r => {
-			const type = r.scenario.split(' ')[0]; // First word of scenario
-			if (!scenarioPerformance.has(type)) scenarioPerformance.set(type, []);
-			scenarioPerformance.get(type)!.push(r.score);
-		});
+		this.results
+			.filter(r => r.success)
+			.forEach(r => {
+				const type = r.scenario.split(" ")[0]; // First word of scenario
+				if (!scenarioPerformance.has(type))
+					scenarioPerformance.set(type, []);
+				scenarioPerformance.get(type)!.push(r.score);
+			});
 
 		this.log("📊 Performance by completion type:");
 		scenarioPerformance.forEach((scores, type) => {
 			const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-			this.log(`   ${type}: ${avg.toFixed(1)}/10 (${scores.length} tests)`);
+			this.log(
+				`   ${type}: ${avg.toFixed(1)}/10 (${scores.length} tests)`
+			);
 		});
 
 		// Specific recommendations
 		if (appropriateCompletions / scores.length < 0.6) {
 			this.log("\n🔧 COMPLETION IMPROVEMENTS NEEDED:");
-			this.log("   - Focus on context-aware suggestions that match immediate typing intent");
-			this.log("   - Reduce generic completions that don't save keystrokes");
-			this.log("   - Improve specificity for API methods and variable references");
+			this.log(
+				"   - Focus on context-aware suggestions that match immediate typing intent"
+			);
+			this.log(
+				"   - Reduce generic completions that don't save keystrokes"
+			);
+			this.log(
+				"   - Improve specificity for API methods and variable references"
+			);
 		}
 
 		if (timeWastingCompletions > scores.length * 0.3) {
 			this.log("\n⚠️  HIGH PRIORITY: Too many time-wasting completions");
-			this.log("   - Filter out irrelevant suggestions that interrupt workflow");
-			this.log("   - Improve context understanding for better appropriateness");
+			this.log(
+				"   - Filter out irrelevant suggestions that interrupt workflow"
+			);
+			this.log(
+				"   - Improve context understanding for better appropriateness"
+			);
 		}
 
 		// Best and worst completion scenarios
 		if (this.results.length > 1) {
-			const bestResult = this.results.filter(r => r.success).sort((a, b) => b.score - a.score)[0];
-			const worstResult = this.results.filter(r => r.success).sort((a, b) => a.score - b.score)[0];
-			
+			const bestResult = this.results
+				.filter(r => r.success)
+				.sort((a, b) => b.score - a.score)[0];
+			const worstResult = this.results
+				.filter(r => r.success)
+				.sort((a, b) => a.score - b.score)[0];
+
 			if (bestResult) {
-				this.log(`\n🏆 Most effective completion: ${bestResult.scenario} (${bestResult.score}/10)`);
+				this.log(
+					`\n🏆 Most effective completion: ${bestResult.scenario} (${bestResult.score}/10)`
+				);
 				this.log(`   Reason: ${bestResult.reasoning}`);
 			}
 			if (worstResult && worstResult.score < bestResult?.score) {
-				this.log(`\n🔴 Least effective completion: ${worstResult.scenario} (${worstResult.score}/10)`);
+				this.log(
+					`\n🔴 Least effective completion: ${worstResult.scenario} (${worstResult.score}/10)`
+				);
 				this.log(`   Reason: ${worstResult.reasoning}`);
 			}
 		}
