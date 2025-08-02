@@ -28,7 +28,6 @@ def validate_user_data(user: Dict[str, str]) -> bool:
 def process_user_list(users: List[Dict[str, str]]) -> List[Dict[str, str]]:
     """Process a list of users, filtering valid ones"""
     valid_users = []
-    
     for user in users:
         # Test 3: Should suggest validate_user_data function
         if validate_user_  # <-- CURSOR

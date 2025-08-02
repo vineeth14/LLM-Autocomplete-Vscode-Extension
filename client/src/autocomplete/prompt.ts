@@ -7,36 +7,42 @@ import * as path from "path";
 // Load environment variables
 dotenv.config({ path: path.join(__dirname, "../../.env") });
 
-// StarCoder FIM template (for reference)
-const starcoderFimTemplate: AutocompleteTemplate = {
+// StarCoder FIM template (for local Ollama)
+const ollamaLocalTemplate: AutocompleteTemplate = {
 	template: "<fim_prefix>{{{prefix}}}<fim_suffix>{{{suffix}}}<fim_middle>",
 	completionOptions: {
-		temperature: 0.1,
+		temperature: 0,
 		top_p: 0.95,
 		num_predict: 50,
 		repeat_penalty: 1.1,
 		stop: ["<fim_prefix>", "<fim_suffix>", "<fim_middle>", "\n\n"],
-		provider: "ollama",
+		provider: "ollama_local",
 	},
 };
 
-// Gemini completion template
-const geminiTemplate: AutocompleteTemplate = {
-	template: `Complete the following code. Only provide the completion, no explanations or extra text.
-
-Code before cursor:
-{{{prefix}}}
-
-Code after cursor:
-{{{suffix}}}
-
-Complete the code at the cursor position:`,
+// Server Ollama template (customizable for different server models)
+const ollamaServerTemplate: AutocompleteTemplate = {
+	template: "<fim_prefix>{{{prefix}}}<fim_suffix>{{{suffix}}}<fim_middle>",
 	completionOptions: {
 		temperature: 0.1,
-		top_p: 0.95,
-		num_predict: 50,
+		top_p: 0.3,
+		num_predict: 30,
 		repeat_penalty: 1.1,
-		stop: ["\n\n", "```", "Complete", "Code before", "Code after"],
+		stop: ["<fim_prefix>", "<fim_suffix>", "<fim_middle>", "\n\n", "\n\ndef", "\n\nclass"],
+		provider: "ollama_server",
+	},
+};
+
+
+// Gemini completion template
+const geminiTemplate: AutocompleteTemplate = {
+	template: `<fim_prefix>{{{prefix}}}<fim_suffix>{{{suffix}}}<fim_middle>`,
+	completionOptions: {
+		temperature: 0,
+		top_p: 0.3,
+		num_predict: 30,
+		repeat_penalty: 1.1,
+		stop: ["\n\n", "<fim_prefix>", "<fim_suffix>", "<fim_middle>", "def ", "class ", "import "],
 		provider: "gemini",
 	},
 };
@@ -55,7 +61,7 @@ Complete the code at the cursor position:`,
 export const systemPrompt = (parameters: Parameters | null): PromptResult => {
 	const prefix = parameters?.prefix || "";
 	const suffix = parameters?.suffix || "";
-	const provider = process.env.LLM_PROVIDER || "ollama";
+	const provider = process.env.LLM_PROVIDER || "ollama_local";
 
 	// Use simple FIM template with just cursor context
 	// Don't trim prefix to preserve indentation context
@@ -63,8 +69,19 @@ export const systemPrompt = (parameters: Parameters | null): PromptResult => {
 	const cleanSuffix = suffix.trimEnd();
 
 	// Choose template based on provider
-	const template =
-		provider === "gemini" ? geminiTemplate : starcoderFimTemplate;
+	let template: AutocompleteTemplate;
+	switch (provider) {
+		case "gemini":
+			template = geminiTemplate;
+			break;
+		case "ollama_server":
+			template = ollamaServerTemplate;
+			break;
+		case "ollama_local":
+		default:
+			template = ollamaLocalTemplate;
+			break;
+	}
 
 	const prompt = template.template
 		.replace("{{{prefix}}}", cleanPrefix)

@@ -23,7 +23,7 @@ export interface CompletionOptions {
 	top_p?: number;
 	num_predict?: number;
 	repeat_penalty?: number;
-	provider?: "ollama" | "gemini";
+	provider?: "ollama_local" | "ollama_server" | "gemini";
 }
 
 export interface OllamaResponse {

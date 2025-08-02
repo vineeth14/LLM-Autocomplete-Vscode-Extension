@@ -17,12 +17,8 @@ def area_of_rectangle(length: float, width: float) -> float:
 def fibonacci(n: int) -> int:
     """Generate nth fibonacci number"""
 
-
-
 def factorial(n: int) -> int:
     """Calculate factorial of n"""
-
-
 
 def find_max(numbers: List[int]) -> int:
     """Find maximum number in list"""
@@ -35,19 +31,14 @@ def find_max(numbers: List[int]) -> int:
     return max_val
 
 def bubble_sort(arr: List[int]) -> List[int]:
-    """Simple bubble sort implementation"""
-    n = len(arr)
-
+    
 def merge_sort(arr):
-    """Merge Sort Implementation"""
-    n = len(arr)
+   
+def merge(left, right):
+       
     
     
 def numberOfIslands(grid: List[List[str]]) -> int:
- 
+    row = len(grid)
+    col = len(grid[0])
     
-
-
-
-    
-        

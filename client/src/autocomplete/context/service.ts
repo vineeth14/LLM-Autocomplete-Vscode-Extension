@@ -2,11 +2,10 @@ import * as vscode from "vscode";
 import { Parameters } from "../types";
 import { getAst } from "./ast";
 import { contextLog } from "../../extension";
+import { getTreePathAtCursor, getContextForPath } from "./ast";
 
 export class ContextRetrievalService {
 	private importCache = new Map<string, string[]>();
-
-	// PUBLIC API
 
 	/**
 	 * Get context for LLM completion using simple cursor-based approach
@@ -18,13 +17,8 @@ export class ContextRetrievalService {
 		document: vscode.TextDocument,
 		position: vscode.Position
 	): Promise<Parameters> {
-		contextLog.appendLine(
-			`[Context] Getting context at line ${position.line}, char ${position.character}`
-		);
 		return await this.getSimpleCursorContext(document, position);
 	}
-
-	// CORE CONTEXT EXTRACTION
 
 	private async getSimpleCursorContext(
 		document: vscode.TextDocument,
@@ -98,13 +92,7 @@ export class ContextRetrievalService {
 		const currentLineText = lines[currentLine] || "";
 		const isAtEndOfLine = currentChar === currentLineText.length;
 
-		contextLog.appendLine("=== CONTEXT ===");
-		contextLog.appendLine("Prefix:");
-		contextLog.appendLine(prefix);
-		contextLog.appendLine("---");
-		contextLog.appendLine("Suffix:");
-		contextLog.appendLine(suffix);
-		contextLog.appendLine("===============");
+		contextLog.appendLine(`[Context] Prefix: ${prefix.split('\n').length} lines, Suffix: ${suffix.split('\n').length} lines`);
 
 		return {
 			prefix: prefix,
@@ -115,7 +103,80 @@ export class ContextRetrievalService {
 		};
 	}
 
-	// TOKEN BUDGET CALCULATION
+	private getImportHash(text: string): string {
+		const importSection = text.substring(0, Math.min(1000, text.length));
+		const crypto = require("crypto");
+		return crypto.createHash("md5").update(importSection).digest("hex");
+	}
+
+	private async extractImportsFromAST(ast: any): Promise<string[]> {
+		const imports: string[] = [];
+		for (const child of ast.rootNode.namedChildren) {
+			if (
+				child.type === "import_statement" ||
+				child.type === "import_from_statement"
+			) {
+				imports.push(child.text.trim()); // Ensure consistent trimming
+			} else if (child.type !== "comment") {
+				break;
+			}
+		}
+		return imports;
+	}
+
+	private async getImportsForDocument(
+		document: vscode.TextDocument
+	): Promise<string[]> {
+		if (document.languageId !== "python") {
+			return [];
+		}
+		const text = document.getText();
+		const cacheKey =
+			document.uri.toString() + ":" + this.getImportHash(text);
+		const cached = this.importCache.get(cacheKey);
+		if (cached) {
+			return cached;
+		}
+		try {
+			const ast = await getAst(text);
+			if (ast) {
+				const imports = await this.extractImportsFromAST(ast);
+				this.importCache.set(cacheKey, imports);
+				return imports;
+			}
+		} catch (error) {
+			const imports = this.extractImportsSimple(text);
+			this.importCache.set(cacheKey, imports);
+		}
+		return [];
+	}
+
+	private extractImportsSimple(text: string): string[] {
+		const lines = text.split("\n");
+		const imports: string[] = [];
+		for (let i = 0; i < Math.min(15, lines.length); i++) {
+			const line = lines[i].trim();
+			if (line.startsWith("import") || line.startsWith("from")) {
+				imports.push(line); // Use trimmed line for consistency
+			} else if (line && !line.startsWith("#")) {
+				break;
+			}
+		}
+		return imports;
+	}
+
+	private estimateTokens(text: string): number {
+		const trimmed = text.trim();
+		if (!trimmed) {
+			return text.length > 0 ? 1 : 0;
+		}
+
+		const meaningfulChars = trimmed.replace(/\s+/g, " ");
+		const roughTokens = meaningfulChars.split(
+			/[\s\(\)\[\]\{\}\.,:;]+/
+		).length;
+		return Math.max(roughTokens, Math.ceil(meaningfulChars.length / 4));
+	}
 
 	private calculateContextBounds(
 		lines: string[],
@@ -150,89 +211,9 @@ export class ContextRetrievalService {
 		}
 
 		contextLog.appendLine(
-			`[Token Budget] Prefix: ${prefixTokens}/${prefixTokenBudget} tokens, ${currentLine - startLine} lines`
-		);
-		contextLog.appendLine(
-			`[Token Budget] Suffix: ${suffixTokens}/${suffixTokenBudget} tokens, ${endLine - currentLine} lines`
+			`[Context Window] ${currentLine - startLine} prefix lines, ${endLine - currentLine} suffix lines`
 		);
 
 		return { startLine, endLine };
-	}
-
-	private estimateTokens(text: string): number {
-		const trimmed = text.trim();
-		if (!trimmed) {
-			return text.length > 0 ? 1 : 0;
-		}
-
-		const meaningfulChars = trimmed.replace(/\s+/g, " ");
-		const roughTokens = meaningfulChars.split(
-			/[\s\(\)\[\]\{\}\.,:;]+/
-		).length;
-		return Math.max(roughTokens, Math.ceil(meaningfulChars.length / 4));
-	}
-
-	// IMPORT EXTRACTION & CACHING
-
-	private async getImportsForDocument(
-		document: vscode.TextDocument
-	): Promise<string[]> {
-		if (document.languageId !== "python") {
-			return [];
-		}
-		const text = document.getText();
-		const cacheKey =
-			document.uri.toString() + ":" + this.getImportHash(text);
-		const cached = this.importCache.get(cacheKey);
-		if (cached) {
-			return cached;
-		}
-		try {
-			const ast = await getAst(text);
-			if (ast) {
-				const imports = await this.extractImportsFromAST(ast);
-				this.importCache.set(cacheKey, imports);
-				return imports;
-			}
-		} catch (error) {
-			const imports = this.extractImportsSimple(text);
-			this.importCache.set(cacheKey, imports);
-		}
-		return [];
-	}
-
-	private async extractImportsFromAST(ast: any): Promise<string[]> {
-		const imports: string[] = [];
-		for (const child of ast.rootNode.namedChildren) {
-			if (
-				child.type === "import_statement" ||
-				child.type === "import_from_statement"
-			) {
-				imports.push(child.text.trim()); // Ensure consistent trimming
-			} else if (child.type !== "comment") {
-				break;
-			}
-		}
-		return imports;
-	}
-
-	private extractImportsSimple(text: string): string[] {
-		const lines = text.split("\n");
-		const imports: string[] = [];
-		for (let i = 0; i < Math.min(15, lines.length); i++) {
-			const line = lines[i].trim();
-			if (line.startsWith("import") || line.startsWith("from")) {
-				imports.push(line); // Use trimmed line for consistency
-			} else if (line && !line.startsWith("#")) {
-				break;
-			}
-		}
-		return imports;
-	}
-
-	private getImportHash(text: string): string {
-		const importSection = text.substring(0, Math.min(1000, text.length));
-		const crypto = require("crypto");
-		return crypto.createHash("md5").update(importSection).digest("hex");
 	}
 }

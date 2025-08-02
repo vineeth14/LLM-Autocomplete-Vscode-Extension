@@ -165,8 +165,9 @@ export function filterSuggestion(
 	if (nonRepeatingLines.length === 0) {
 		return undefined;
 	}
-	const result = filteredLines.join("\n").trim();
-	return result;
+	// Return multi-line completions to prevent semantic fragmentation
+	const result = nonRepeatingLines.join("\n").trim();
+	return result || undefined;
 }
 
 function cleanTokensAndPhrases(text: string): string {
