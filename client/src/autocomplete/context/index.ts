@@ -1,10 +1,6 @@
 /**
  * Context Retrieval System
-<<<<<<< HEAD
  *
-=======
- * 
->>>>>>> main
  * Currently uses simple cursor-based context extraction.
  * AST-based infrastructure is available but commented out.
  * See README.md for details on enabling AST context.
@@ -19,22 +15,13 @@ export type {
 	ContextConfig,
 	ContextResult,
 	AutocompleteSnippet,
-	ScopeLevel,
-	SymbolType,
 } from "./types";
 
 // Currently unused - available for future AST-based context
-<<<<<<< HEAD
 // export {
 // 	prioritizeSnippets,
 // 	formatSnippetsAsContext,
 // 	buildScopeAwareContext
-=======
-// export { 
-// 	prioritizeSnippets, 
-// 	formatSnippetsAsContext, 
-// 	buildScopeAwareContext 
->>>>>>> main
 // } from "./formatters";
 
 // Currently unused - available for future AST-based context
