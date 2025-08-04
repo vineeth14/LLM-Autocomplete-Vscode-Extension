@@ -10,6 +10,7 @@ import {
 } from "vscode-languageclient/node";
 
 import { LLMInlineCompletionProvider } from "./autocomplete/LLMInlineCompletionProvider";
+import { ZetaInlineCompletionProvider } from "./autocomplete/ZetaInlineCompletionProvider";
 import {
 	runLatencyTests,
 	runPartialCompletionTests,
@@ -62,7 +63,7 @@ export function activate(context: ExtensionContext) {
 	// Start the client. This will also launch the server
 	client.start();
 
-	const provider = new LLMInlineCompletionProvider();
+	const provider = new ZetaInlineCompletionProvider();
 
 	const disposable = languages.registerInlineCompletionItemProvider(
 		{ pattern: "**" },

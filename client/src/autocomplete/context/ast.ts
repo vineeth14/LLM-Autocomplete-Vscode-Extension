@@ -46,6 +46,16 @@ async function initializeParser(): Promise<Parser.Language | null> {
 
 // Core AST parsing functions
 
+export function nodeToRange(
+	document: vscode.TextDocument,
+	node: Parser.SyntaxNode
+): vscode.Range {
+	return new vscode.Range(
+		new vscode.Position(node.startPosition.row, node.startPosition.column),
+		new vscode.Position(node.endPosition.row, node.endPosition.column)
+	);
+}
+
 export async function getAst(
 	fileContents: string
 ): Promise<Parser.Tree | undefined> {
@@ -233,7 +243,9 @@ async function getQuery(nodeType: string): Promise<Parser.Query | undefined> {
 		const querySource = fs.readFileSync(queryPath, "utf8");
 		return language.query(querySource);
 	} catch (error) {
-		contextLog.appendLine(`[AST] Failed to load query for ${nodeType}: ${error}`);
+		contextLog.appendLine(
+			`[AST] Failed to load query for ${nodeType}: ${error}`
+		);
 		return undefined;
 	}
 }
@@ -247,12 +259,24 @@ function findQueryFile(nodeType: string): string | undefined {
 	// Additional fallback for different project structures
 	const possiblePaths = [
 		basePath,
-		path.join(__dirname, "../../../../../custom-llm-autocomplete/client/src/autocomplete/context"),
-		path.join(__dirname, "../../../../../../custom-llm-autocomplete/client/src/autocomplete/context"),
+		path.join(
+			__dirname,
+			"../../../../../custom-llm-autocomplete/client/src/autocomplete/context"
+		),
+		path.join(
+			__dirname,
+			"../../../../../../custom-llm-autocomplete/client/src/autocomplete/context"
+		),
 	];
 
 	for (const testPath of possiblePaths) {
-		const queryPath = path.join(testPath, "languages", "python", "queries", `${nodeType}.scm`);
+		const queryPath = path.join(
+			testPath,
+			"languages",
+			"python",
+			"queries",
+			`${nodeType}.scm`
+		);
 		if (fs.existsSync(queryPath)) {
 			return queryPath;
 		}
@@ -269,4 +293,8 @@ function keyFromNode(parentKey: string, astNode: Parser.SyntaxNode): string {
 		.update(astNode.type)
 		.update(astNode.startIndex.toString())
 		.digest("hex");
+}
+
+export function estimateTokensZeta(text: string): number {
+	return Math.ceil(text.length / 3);
 }

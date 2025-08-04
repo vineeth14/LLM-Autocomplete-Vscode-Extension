@@ -92,13 +92,13 @@ export class LatencyTester {
 				const endTime = performance.now();
 				const latency = endTime - startTime;
 
-				const breakdown = this.provider.getLastTimingBreakdown();
+				// const breakdown = this.provider.getLastTimingBreakdown();
 				const result: LatencyResult = {
 					position: `${testCase.line}:${testCase.char} (${testCase.desc})`,
 					latency: latency,
 					success: items && items.length > 0,
 					suggestion: items?.[0]?.insertText?.toString(),
-					breakdown: breakdown,
+					// breakdown: breakdown,
 				};
 
 				this.results.push(result);
@@ -107,14 +107,14 @@ export class LatencyTester {
 					`   ⏱️  ${latency.toFixed(1)}ms - ${result.success ? "✅" : "❌"}`
 				);
 
-				if (breakdown) {
-					this.log(
-						`   📊 Breakdown: Debounce ${breakdown.debounce.toFixed(0)}ms | Cache ${breakdown.cache.toFixed(0)}ms | Context ${breakdown.context.toFixed(0)}ms | Network ${breakdown.network.toFixed(0)}ms`
-					);
-					this.log(
-						`   👤 User perceived: ${breakdown.userPerceived.toFixed(0)}ms (after stopping typing)`
-					);
-				}
+				// if (breakdown) {
+				// 	this.log(
+				// 		`   📊 Breakdown: Debounce ${breakdown.debounce.toFixed(0)}ms | Cache ${breakdown.cache.toFixed(0)}ms | Context ${breakdown.context.toFixed(0)}ms | Network ${breakdown.network.toFixed(0)}ms`
+				// 	);
+				// 	this.log(
+				// 		`   👤 User perceived: ${breakdown.userPerceived.toFixed(0)}ms (after stopping typing)`
+				// 	);
+				// }
 
 				if (result.suggestion) {
 					this.log(
@@ -211,13 +211,13 @@ export class LatencyTester {
 				const endTime = performance.now();
 				const latency = endTime - startTime;
 
-				const breakdown = this.provider.getLastTimingBreakdown();
+				// const breakdown = this.provider.getLastTimingBreakdown();
 				const result: LatencyResult = {
 					position: `${testCase.line}:${testCase.char} (${testCase.desc})`,
 					latency: latency,
 					success: items && items.length > 0,
 					suggestion: items?.[0]?.insertText?.toString(),
-					breakdown: breakdown,
+					// breakdown: breakdown,
 				};
 
 				this.results.push(result);
@@ -226,14 +226,14 @@ export class LatencyTester {
 					`   ⏱️  ${latency.toFixed(1)}ms - ${result.success ? "✅" : "❌"}`
 				);
 
-				if (breakdown) {
-					this.log(
-						`   📊 Breakdown: Debounce ${breakdown.debounce.toFixed(0)}ms | Cache ${breakdown.cache.toFixed(0)}ms | Context ${breakdown.context.toFixed(0)}ms | Network ${breakdown.network.toFixed(0)}ms`
-					);
-					this.log(
-						`   👤 User perceived: ${breakdown.userPerceived.toFixed(0)}ms (after stopping typing)`
-					);
-				}
+				// if (breakdown) {
+				// 	this.log(
+				// 		`   📊 Breakdown: Debounce ${breakdown.debounce.toFixed(0)}ms | Cache ${breakdown.cache.toFixed(0)}ms | Context ${breakdown.context.toFixed(0)}ms | Network ${breakdown.network.toFixed(0)}ms`
+				// 	);
+				// 	this.log(
+				// 		`   👤 User perceived: ${breakdown.userPerceived.toFixed(0)}ms (after stopping typing)`
+				// 	);
+				// }
 
 				if (result.suggestion) {
 					this.log(

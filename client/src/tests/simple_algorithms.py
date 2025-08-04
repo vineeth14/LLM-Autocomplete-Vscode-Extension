@@ -1,44 +1,31 @@
-"""
-Simple algorithmic functions for testing autocompletion
-"""
-import math
-from typing import List, Dict
-
-def area_of_square(side: float) -> float:
-    return side * side
-
-def area_of_circle(radius: float) -> float:
-    """Calculate area of a circle"""
-    return radius ** 2 * math.pi
-
-def area_of_rectangle(length: float, width: float) -> float: 
-    return length * width
-
-def fibonacci(n: int) -> int:
-    """Generate nth fibonacci number"""
-
 def factorial(n: int) -> int:
-    """Calculate factorial of n"""
+    if n < 0:
+        raise ValueError("Input must be a non-negative integer")
+    result = 1
+    for i in range(2, n + 1):
+        result *= i
+    return result
 
 def find_max(numbers: List[int]) -> int:
     """Find maximum number in list"""
     if not numbers:
-        return 0
+        raise ValueError("List cannot be empty")
     max_val = numbers[0]
     for num in numbers:
         if num > max_val:
             max_val = num
     return max_val
 
-def bubble_sort(arr: List[int]) -> List[int]:
+def numberofIslands(grid):
+    rl = len(grid)
+    cl = len(grid[0])
+    islands = 0
+    for r in range(rl):
+        
+
+
+
+
+
     
-def merge_sort(arr):
-   
-def merge(left, right):
-       
-    
-    
-def numberOfIslands(grid: List[List[str]]) -> int:
-    row = len(grid)
-    col = len(grid[0])
     

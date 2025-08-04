@@ -91,6 +91,7 @@ export class LLMInlineCompletionProvider {
 			// Start new generator
 			this.previousGeneratorPrefix = currentPrefix;
 
+			// Get context for completion using original context service
 			const context: Parameters =
 				await this.contextRetrievalService.getContextForCompletion(
 					document,
@@ -111,6 +112,10 @@ export class LLMInlineCompletionProvider {
 			}
 
 			this.previousCompletion = suggestion;
+
+			// Log the LLM response for comparison
+			log.appendLine("=== LLM RESPONSE ===");
+			log.appendLine(suggestion);
 
 			// Only cache valid completions with unique key
 			this.cache.put(cacheKey, this.previousCompletion);
@@ -142,5 +147,4 @@ export class LLMInlineCompletionProvider {
 			return [];
 		}
 	}
-
 }

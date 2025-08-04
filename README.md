@@ -1,68 +1,68 @@
-# LLM Autocomplete Vscode Extension
+# LLM Autocomplete VSCode Extension
 
-NOTE: The starting template is based on [lsp-sample from vscode-extension-samples][sample]
+A VSCode extension that provides AI-powered inline code completion using **multiple LLM providers** (Ollama Local + Ollama Server + Gemini). Features a simple cursor-based context approach with advanced caching and latency optimizations for high-performance completions.
 
-This is the project I've choosen for 'Impossible Day' at Recurse Center.
+## Features
 
-"Self-contained" in this context means that this extension bundles its own language server code rather than wrapping an existing language server executable.
+- **Triple Provider Support**: Ollama Local, Ollama Server, and Gemini with provider-specific optimizations
+- **High Performance**: Multi-level caching, HTTP connection pooling, and generator reuse
+- **Smart Context**: Cursor-based context extraction with AST-powered import handling for Python
+- **Advanced Filtering**: Comprehensive response cleaning for code-only completions
+- **Performance Monitoring**: Detailed timing logs and latency testing
 
-As an MVP, this omits
+## Quick Start
 
-- linting
-- testing
-- behavior in the language server itself (besides connecting and listening to document changes)
+1. **Install dependencies:**
 
-## Getting Started
+    ```bash
+    npm install
+    ```
 
-1. Clone this repo
-2. Replace items in `package.json` marked `llm-autocomplete` with text related to your extension
-3. Do the same for `client/package.json` and `server/package.json`
-4. Do the same in `client/src/extension.ts`
-5. Run `npm install` from the repo root.
+2. **Create `.env` file** with your LLM provider configuration
 
-To make it easy to get started, this language server will run on _every_ file type by default. To target specific languages, change
+3. **Build and run:**
 
-`package.json`'s `activationEvents` to something like
+    ```bash
+    npm run compile
+    ```
+
+4. **Debug:** Press `F5` in VSCode to launch Extension Development Host
+
+## Available Commands
+
+- `npm run compile` - Build the entire project
+- `npm run watch` - Watch mode for development
+- `npm run format` - Format code with Prettier
+- `llm-autocomplete.runLatencyTests` - Run performance tests
+- `llm-autocomplete.runJudgeTests` - Run LLM quality evaluation tests
+
+## Architecture
 
 ```
-"activationEvents": [
-  "onLanguage:plaintext"
-],
+client/src/autocomplete/
+├── LLMInlineCompletionProvider.ts  // Main completion provider
+├── suggestion.ts                   // Triple provider API calls
+├── prompt.ts                      // Provider-specific templates
+├── debouncer.ts                   // Request debouncing (100ms)
+├── filters/
+│   └── suggestion-filter.ts       // Response cleaning
+└── context/
+    ├── service.ts                 // Context extraction
+    ├── cache.ts                   // LRU completion cache
+    ├── ast.ts                     // Tree-sitter Python parsing
+    └── languages/python/queries/  // Tree-sitter query files
 ```
 
-And change the `documentSelector` in `client/src/extension.ts` to replace the `*` (e.g.)
+## Performance
 
-```
-documentSelector: [{ scheme: "file", language: "plaintext" }],
-```
+- **Cache hit**: <1ms instant response
+- **Context extraction**: ~1-5ms
+- **LLM inference**: ~200-1000ms (model dependent)
+- **Generator reuse**: <1ms for continued completions
+- **Connection pooling**: Reduces network overhead
 
-## Anatomy
+## Debug Channels
 
-```
-.
-├── .vscode
-│   ├── launch.json         // Tells VS Code how to launch our extension
-│   └── tasks.json          // Tells VS Code how to build our extension
-├── LICENSE
-├── README.md
-├── client
-│   ├── package-lock.json   // Client dependencies lock file
-│   ├── package.json        // Client manifest
-│   ├── src
-│   │   └── extension.ts    // Code to tell VS Code how to run our language server
-│   └── tsconfig.json       // TypeScript config for the client
-├── package-lock.json       // Top-level Dependencies lock file
-├── package.json            // Top-level manifest
-├── server
-│   ├── package-lock.json   // Server dependencies lock file
-│   ├── package.json        // Server manifest
-│   ├── src
-│   │   └── server.ts       // Language server code
-│   └── tsconfig.json       // TypeScript config for the client
-└── tsconfig.json           // Top-level TypeScript config
-```
-
-[debug]: https://code.visualstudio.com/api/language-extensions/language-server-extension-guide#debugging-both-client-and-server
-[sample]: https://github.com/microsoft/vscode-extension-samples/tree/main/lsp-sample
-[publish]: https://code.visualstudio.com/api/working-with-extensions/publishing-extension
-[vsix]: https://code.visualstudio.com/api/working-with-extensions/publishing-extension#packaging-extensions
+- VSCode Output → "LLM Tab Complete" - completion results and timing
+- VSCode Output → "Context" - extracted context debugging
+- `/tmp/llm-judge-test.log` - quality evaluation results

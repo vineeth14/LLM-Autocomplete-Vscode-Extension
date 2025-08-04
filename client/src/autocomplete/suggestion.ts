@@ -13,7 +13,7 @@ import * as path from "path";
 import { filterSuggestion } from "./filters/suggestion-filter";
 
 // Load environment variables from .env file
-dotenv.config({ path: path.join(__dirname, "../.env") });
+dotenv.config({ path: path.join(__dirname, "../../.env") });
 
 const DEFAULT_PROVIDER = process.env.LLM_PROVIDER || "ollama_local";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -23,9 +23,15 @@ const GOOGLE_CLOUD_LOCATION =
 
 // Dual Ollama configuration
 const ollamaLocalUrl = process.env.OLLAMA_LOCAL_URL || "http://localhost:11434";
-const ollamaServerUrl = process.env.OLLAMA_SERVER_URL || process.env.OLLAMA_URL || "http://localhost:11434";
+const ollamaServerUrl =
+	process.env.OLLAMA_SERVER_URL ||
+	process.env.OLLAMA_URL ||
+	"http://localhost:11434";
 const ollamaLocalModel = process.env.OLLAMA_LOCAL_MODEL || "starcoder:3b";
-const ollamaServerModel = process.env.OLLAMA_SERVER_MODEL || process.env.OLLAMA_MODEL || "starcoder:3b";
+const ollamaServerModel =
+	process.env.OLLAMA_SERVER_MODEL ||
+	process.env.OLLAMA_MODEL ||
+	"starcoder:3b";
 
 const geminiModel = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
 
@@ -37,17 +43,19 @@ const httpAgent = new Agent({
 	timeout: parseInt(process.env.HTTP_TIMEOUT || "3000"),
 });
 
-async function callProvider(
+export async function callProvider(
 	prompt: string,
 	options?: CompletionOptions,
-	token?: CancellationToken
+	token?: CancellationToken,
+	abortSignal?: AbortSignal
 ): Promise<string> {
 	const provider = options?.provider || DEFAULT_PROVIDER;
+	log.appendLine(`[Provider Selection] Using provider: ${provider}`);
 	switch (provider) {
 		case "ollama_local":
 			return callOllamaLocal(prompt, options, token);
 		case "ollama_server":
-			return callOllamaServer(prompt, options, token);
+			return callOllamaServer(prompt, options, token, abortSignal);
 		case "gemini":
 			return callGemini(prompt, options, token);
 		default:
@@ -108,7 +116,6 @@ async function callGemini(
 	throw new Error("Max retries exceeded");
 }
 
-
 async function callOllamaLocal(
 	prompt: string,
 	options?: CompletionOptions,
@@ -126,12 +133,7 @@ async function callOllamaLocal(
 				top_p: 0.95,
 				num_predict: 50,
 				repeat_penalty: 1.1,
-				stop: [
-					"<fim_prefix>",
-					"<fim_suffix>",
-					"<fim_middle>",
-					"\n\n",
-				],
+				stop: ["<fim_prefix>", "<fim_suffix>", "<fim_middle>", "\n\n"],
 			},
 		});
 
@@ -170,7 +172,8 @@ async function callOllamaLocal(
 async function callOllamaServer(
 	prompt: string,
 	options?: CompletionOptions,
-	token?: CancellationToken
+	token?: CancellationToken,
+	abortSignal?: AbortSignal
 ): Promise<string> {
 	const controller = new AbortController();
 	try {
@@ -203,6 +206,7 @@ async function callOllamaServer(
 				Connection: "keep-alive",
 			},
 			body: requestBody,
+			signal: abortSignal || controller.signal,
 			// @ts-ignore - TypeScript doesn't recognize agent in fetch
 			agent: httpAgent,
 		});

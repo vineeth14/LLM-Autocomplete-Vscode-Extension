@@ -28,11 +28,17 @@ const ollamaServerTemplate: AutocompleteTemplate = {
 		top_p: 0.3,
 		num_predict: 30,
 		repeat_penalty: 1.1,
-		stop: ["<fim_prefix>", "<fim_suffix>", "<fim_middle>", "\n\n", "\n\ndef", "\n\nclass"],
+		stop: [
+			"<fim_prefix>",
+			"<fim_suffix>",
+			"<fim_middle>",
+			"\n\n",
+			"\n\ndef",
+			"\n\nclass",
+		],
 		provider: "ollama_server",
 	},
 };
-
 
 // Gemini completion template
 const geminiTemplate: AutocompleteTemplate = {
@@ -42,7 +48,15 @@ const geminiTemplate: AutocompleteTemplate = {
 		top_p: 0.3,
 		num_predict: 30,
 		repeat_penalty: 1.1,
-		stop: ["\n\n", "<fim_prefix>", "<fim_suffix>", "<fim_middle>", "def ", "class ", "import "],
+		stop: [
+			"\n\n",
+			"<fim_prefix>",
+			"<fim_suffix>",
+			"<fim_middle>",
+			"def ",
+			"class ",
+			"import ",
+		],
 		provider: "gemini",
 	},
 };

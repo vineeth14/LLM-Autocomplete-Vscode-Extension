@@ -92,7 +92,9 @@ export class ContextRetrievalService {
 		const currentLineText = lines[currentLine] || "";
 		const isAtEndOfLine = currentChar === currentLineText.length;
 
-		contextLog.appendLine(`[Context] Prefix: ${prefix.split('\n').length} lines, Suffix: ${suffix.split('\n').length} lines`);
+		contextLog.appendLine(
+			`[Context] Prefix: ${prefix.split("\n").length} lines, Suffix: ${suffix.split("\n").length} lines`
+		);
 
 		return {
 			prefix: prefix,
