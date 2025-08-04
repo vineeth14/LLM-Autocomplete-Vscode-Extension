@@ -35,6 +35,28 @@
 				"command": "llm-autocomplete.runJudgeTests",
 				"title": "Run LLM Judge Quality Tests",
 				"category": "LLM Autocomplete"
+			},
+			{
+				"command": "zeta.acceptPrediction",
+				"title": "Accept Current Prediction",
+				"category": "Zeta"
+			},
+			{
+				"command": "zeta.cancelPredictions",
+				"title": "Cancel All Predictions",
+				"category": "Zeta"
+			}
+		],
+		"keybindings": [
+			{
+				"command": "zeta.acceptPrediction",
+				"key": "tab",
+				"when": "zetaPredictionsActive && editorTextFocus"
+			},
+			{
+				"command": "zeta.cancelPredictions", 
+				"key": "escape",
+				"when": "zetaPredictionsActive && editorTextFocus"
 			}
 		]
 	},
@@ -43,6 +65,7 @@
 		"compile": "tsc -b && npm run copy-queries",
 		"copy-queries": "mkdir -p client/out/autocomplete/context/languages/python/queries && cp client/src/autocomplete/context/languages/python/queries/*.scm client/out/autocomplete/context/languages/python/queries/",
 		"watch": "tsc -b -w",
+		"dev": "npm run compile && code --extensionDevelopmentPath=. .",
 		"postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
 		"_lint": "eslint . --ext .ts,.js",
 		"_lint:fix": "eslint . --ext .ts,.js --fix",

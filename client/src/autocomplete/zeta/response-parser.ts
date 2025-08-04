@@ -150,10 +150,6 @@ export function processZetaResponse(
 	editableRange: vscode.Range,
 	document: vscode.TextDocument
 ): ZetaEdit[] {
-	log.appendLine(
-		`[Zeta Debug] Raw response: ${rawResponse.substring(0, 300)}`
-	);
-
 	const parsed = parseZetaResponse(rawResponse);
 	if (!parsed.isValid) {
 		log.appendLine(`[Zeta Debug] Parse failed: ${parsed.error}`);
