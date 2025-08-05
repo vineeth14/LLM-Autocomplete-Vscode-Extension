@@ -14,10 +14,13 @@ import {
 import { callProvider } from "./suggestion";
 import { log } from "../extension";
 import { RequestDebouncer } from "./debouncer";
+import { PredictionNavigator } from "./prediction-navigator/PredictionNavigator";
+import { createEditPrediction } from "./prediction-navigator/utils";
 
 export class ZetaInlineCompletionProvider {
 	private debouncer = new RequestDebouncer();
 	private currentAbortController: AbortController | null = null;
+	constructor(private predictionNavigator: PredictionNavigator) {}
 
 	async provideInlineCompletionItems(
 		document: TextDocument,
@@ -27,6 +30,12 @@ export class ZetaInlineCompletionProvider {
 	): Promise<InlineCompletionItem[]> {
 		log.appendLine("[Zeta] Called");
 		try {
+			// CRITICAL: Prevent new completions during active multi-edit navigation
+			if (this.predictionNavigator.isActive()) {
+				log.appendLine("[Zeta] Active predictions in progress, skipping new completion");
+				return [];
+			}
+
 			// Cancel previous request if it exists
 			if (this.currentAbortController) {
 				log.appendLine("[Zeta] Cancelling previous request");
@@ -74,8 +83,21 @@ export class ZetaInlineCompletionProvider {
 			}
 
 			const groupedEdits = groupEditsNearCursor(zetaEdits, position);
+			log.appendLine(`[Zeta Debug] Found ${zetaEdits.length} total edits, ${groupedEdits.length} grouped edits`);
+			
 			if (groupedEdits.length === 0) return [];
-
+			
+			if (groupedEdits.length > 1) {
+				log.appendLine(`[Zeta Debug] Multi-edit detected! Creating ${groupedEdits.length} predictions`);
+				const predictions = groupedEdits.map((edit, index) =>
+					createEditPrediction(edit, document, index)
+				);
+				this.predictionNavigator.showPredictions(document, predictions);
+				log.appendLine(`[Zeta Debug] Called showPredictions with ${predictions.length} predictions`);
+				return [];
+			}
+			
+			log.appendLine(`[Zeta Debug] Single edit mode - returning normal completion`);
 			return groupedEdits.map(
 				edit => new InlineCompletionItem(edit.newText, edit.range)
 			);

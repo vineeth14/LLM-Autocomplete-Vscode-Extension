@@ -10,10 +10,10 @@ def find_max(numbers: List[int]) -> int:
     """Find maximum number in list"""
     if not numbers:
         raise ValueError("List cannot be empty")
-    max_val = numbers[0]
+    max_val = float('-inf')
     for num in numbers:
         if num > max_val:
-            max_val = num
+            max_val = 
     return max_val
 
 def numberofIslands(grid):
@@ -21,6 +21,7 @@ def numberofIslands(grid):
     cl = len(grid[0])
     islands = 0
     for r in range(rl):
+        for c in range()
         
 
 

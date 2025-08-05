@@ -17,6 +17,9 @@ import {
 	runFunctionCompletionTests,
 } from "./tests/latency-test";
 import { runLLMJudgeTests } from "./tests/llm-judge-test";
+import { runMultiEditTests, runRealMultiEditTests } from "./tests/multi-edit-test";
+import { PredictionNavigator } from "./autocomplete/prediction-navigator/PredictionNavigator";
+import { PredictionCommands } from "./autocomplete/prediction-navigator/commands";
 
 let client: LanguageClient;
 
@@ -63,7 +66,12 @@ export function activate(context: ExtensionContext) {
 	// Start the client. This will also launch the server
 	client.start();
 
-	const provider = new ZetaInlineCompletionProvider();
+	// Create prediction navigator and commands
+	const predictionNavigator = new PredictionNavigator(context);
+	const predictionCommands = new PredictionCommands(predictionNavigator);
+	predictionCommands.registerCommands(context);
+
+	const provider = new ZetaInlineCompletionProvider(predictionNavigator);
 
 	const disposable = languages.registerInlineCompletionItemProvider(
 		{ pattern: "**" },
@@ -88,12 +96,22 @@ export function activate(context: ExtensionContext) {
 		"llm-autocomplete.runJudgeTests",
 		runLLMJudgeTests
 	);
+	const multiEditTestCommand = vscode.commands.registerCommand(
+		"llm-autocomplete.runMultiEditTests",
+		runMultiEditTests
+	);
+	const realMultiEditTestCommand = vscode.commands.registerCommand(
+		"llm-autocomplete.runRealMultiEditTests",
+		runRealMultiEditTests
+	);
 
 	context.subscriptions.push(
 		testCommand,
 		partialTestCommand,
 		functionTestCommand,
-		judgeTestCommand
+		judgeTestCommand,
+		multiEditTestCommand,
+		realMultiEditTestCommand
 	);
 }
 

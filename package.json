@@ -35,6 +35,38 @@
 				"command": "llm-autocomplete.runJudgeTests",
 				"title": "Run LLM Judge Quality Tests",
 				"category": "LLM Autocomplete"
+			},
+			{
+				"command": "llm-autocomplete.runMultiEditTests",
+				"title": "Run Multi-Edit Workflow Tests",
+				"category": "LLM Autocomplete"
+			},
+			{
+				"command": "llm-autocomplete.runRealMultiEditTests",
+				"title": "Run Real Multi-Edit Tests (with LLM)",
+				"category": "LLM Autocomplete"
+			},
+			{
+				"command": "zeta.acceptPrediction",
+				"title": "Accept Current Prediction",
+				"category": "Zeta"
+			},
+			{
+				"command": "zeta.cancelPredictions",
+				"title": "Cancel All Predictions",
+				"category": "Zeta"
+			}
+		],
+		"keybindings": [
+			{
+				"command": "zeta.acceptPrediction",
+				"key": "tab",
+				"when": "zetaPredictionsActive && editorTextFocus"
+			},
+			{
+				"command": "zeta.cancelPredictions",
+				"key": "escape",
+				"when": "zetaPredictionsActive && editorTextFocus"
 			}
 		]
 	},

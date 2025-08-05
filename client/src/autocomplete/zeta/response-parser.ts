@@ -20,6 +20,7 @@ export interface TextEdit {
 	newText: string;
 }
 
+//Represents a single text modification
 export interface ZetaEdit {
 	range: vscode.Range;
 	newText: string;
@@ -60,7 +61,6 @@ export function parseZetaResponse(rawResponse: string): ParsedZetaResponse {
 			};
 		}
 
-		// Extract content like zeta.rs does:
 		// 1. Start from the start marker position
 		const startMarkerPos = startMarkerMatches[0].index!;
 		let contentFromStart = content.substring(startMarkerPos);
@@ -150,10 +150,6 @@ export function processZetaResponse(
 	editableRange: vscode.Range,
 	document: vscode.TextDocument
 ): ZetaEdit[] {
-	log.appendLine(
-		`[Zeta Debug] Raw response: ${rawResponse.substring(0, 300)}`
-	);
-
 	const parsed = parseZetaResponse(rawResponse);
 	if (!parsed.isValid) {
 		log.appendLine(`[Zeta Debug] Parse failed: ${parsed.error}`);
@@ -206,7 +202,7 @@ export function groupEditsNearCursor(
 
 	for (let i = closestEditIndex + 1; i < edits.length; i++) {
 		const distance = edits[i].range.start.line - closestEdit.range.end.line;
-		if (distance <= 1) {
+		if (distance <= 3) {
 			endIndex = i + 1;
 		} else {
 			break;
