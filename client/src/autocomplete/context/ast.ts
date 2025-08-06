@@ -11,9 +11,8 @@ import { readRangeInFile, gotoDefinition } from "./file-utils";
 export type AstPath = Parser.SyntaxNode[];
 
 const TYPES_TO_USE = new Set([
-	// "module",
+	"module",
 	"function_definition",
-	//"program",
 	"class_definition",
 ]);
 
@@ -168,11 +167,10 @@ async function getSnippetsForNode(
 	}
 
 	// Execute query and collect snippets from captures
-	//const matches = query.matches(astNode);
+	const matches = query.matches(astNode);
 
 	// Process matches based on node type
-	const queries = query
-		.matches(astNode)
+	const queries = matches
 		.map(async (match: Parser.QueryMatch) => {
 			const matchSnippets: AutocompleteSnippet[] = [];
 			for (const item of match.captures) {

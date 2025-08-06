@@ -28,11 +28,6 @@ export interface ZetaEdit {
 
 export function parseZetaResponse(rawResponse: string): ParsedZetaResponse {
 	try {
-		// Debug logging for end-of-line completion issues
-		log.appendLine(`[DEBUG] Raw response length: ${rawResponse.length} chars`);
-		log.appendLine(`[DEBUG] Raw response preview: "${rawResponse.substring(0, 200)}..."`);
-		log.appendLine(`[DEBUG] Raw response has start marker: ${rawResponse.includes(EDITABLE_REGION_START_MARKER)}, has end marker: ${rawResponse.includes(EDITABLE_REGION_END_MARKER)}`);
-		
 		// Remove cursor markers first
 		let content = rawResponse.replace(
 			new RegExp(escapeRegex(CURSOR_MARKER), "g"),
@@ -140,18 +135,6 @@ export function textEditToVSCodeEdit(
 	const editableText = document.getText(editableRange);
 	const editableLines = editableText.split("\n");
 
-	// DEBUG: Log the inputs
-	log.appendLine(`[DEBUG] textEditToVSCodeEdit called:`);
-	log.appendLine(
-		`[DEBUG] edit.start=${edit.start}, edit.end=${edit.end}, newText="${edit.newText}"`
-	);
-	log.appendLine(
-		`[DEBUG] editableRange: ${editableRange.start.line}:${editableRange.start.character} to ${editableRange.end.line}:${editableRange.end.character}`
-	);
-	log.appendLine(
-		`[DEBUG] editableText length=${editableText.length}: "${editableText.substring(0, 50)}..."`
-	);
-	log.appendLine(`[DEBUG] editableLines count=${editableLines.length}`);
 
 	let startLine = 0,
 		startChar = edit.start;
@@ -169,10 +152,6 @@ export function textEditToVSCodeEdit(
 		endLine++;
 	}
 
-	// DEBUG: Log the calculations
-	log.appendLine(
-		`[DEBUG] Calculated: startLine=${startLine}, startChar=${startChar}, endLine=${endLine}, endChar=${endChar}`
-	);
 
 	const startPos = new vscode.Position(
 		editableRange.start.line + startLine,
@@ -183,10 +162,6 @@ export function textEditToVSCodeEdit(
 		endLine === 0 ? editableRange.start.character + endChar : endChar
 	);
 
-	// DEBUG: Log final positions
-	log.appendLine(
-		`[DEBUG] Final positions: startPos=${startPos.line}:${startPos.character}, endPos=${endPos.line}:${endPos.character}`
-	);
 
 	const result = {
 		range: new vscode.Range(startPos, endPos),
@@ -236,29 +211,45 @@ export function mergeOverlappingEdits(
 	return merged;
 }
 
+// Remove # comments from newText to clean up AI-generated suggestions
+function stripComments(text: string): string {
+	return text
+		.split('\n')
+		.map(line => {
+			// Remove lines that are purely comments (only whitespace + # + comment)
+			if (line.trim().startsWith('#')) {
+				return '';
+			}
+			// Remove inline comments (preserve code before #)
+			const commentIndex = line.indexOf('#');
+			if (commentIndex !== -1) {
+				// Make sure it's not inside a string literal
+				const beforeComment = line.substring(0, commentIndex);
+				const singleQuotes = (beforeComment.match(/'/g) || []).length;
+				const doubleQuotes = (beforeComment.match(/"/g) || []).length;
+				
+				// If even number of quotes, comment is outside string literals
+				if (singleQuotes % 2 === 0 && doubleQuotes % 2 === 0) {
+					return line.substring(0, commentIndex).trimEnd();
+				}
+			}
+			return line;
+		})
+		.filter(line => line.trim() !== '') // Remove empty lines
+		.join('\n');
+}
+
 export function processZetaResponse(
 	rawResponse: string,
 	editableRange: vscode.Range,
 	document: vscode.TextDocument
 ): ZetaEdit[] {
-	// DEBUG: Log the editable range being processed
-	log.appendLine(
-		`[DEBUG] processZetaResponse called with editableRange: ${editableRange.start.line}:${editableRange.start.character} to ${editableRange.end.line}:${editableRange.end.character}`
-	);
-
 	const parsed = parseZetaResponse(rawResponse);
 	if (!parsed.isValid) {
-		log.appendLine(`[Zeta Debug] Parse failed: ${parsed.error}`);
 		return [];
 	}
 
 	const oldText = document.getText(editableRange);
-	log.appendLine(
-		`[DEBUG] oldText from editableRange: "${oldText.substring(0, 100)}..."`
-	);
-	log.appendLine(
-		`[DEBUG] parsed.extractedCode: "${parsed.extractedCode.substring(0, 100)}..."`
-	);
 
 	const allEdits = computeAllEdits(oldText, parsed.extractedCode);
 	const filteredEdits = allEdits.filter(
@@ -272,15 +263,13 @@ export function processZetaResponse(
 		textEditToVSCodeEdit(edit, editableRange, document)
 	);
 
-	// Log each final edit with essential context
-	vscodeEdits.forEach((edit, index) => {
-		const lineText = document.lineAt(edit.range.start.line).text;
-		log.appendLine(
-			`[Edit ${index + 1}] Line ${edit.range.start.line}:${edit.range.start.character}-${edit.range.end.character} | "${edit.newText.replace(/\n/g, "\\n")}" | Context: "${lineText}"`
-		);
-	});
+	// Strip comments from all edits to clean up AI suggestions
+	const cleanedEdits = vscodeEdits.map(edit => ({
+		...edit,
+		newText: stripComments(edit.newText)
+	})).filter(edit => edit.newText.trim() !== ''); // Remove edits that become empty after comment removal
 
-	return vscodeEdits;
+	return cleanedEdits;
 }
 
 export function groupEditsNearCursor(

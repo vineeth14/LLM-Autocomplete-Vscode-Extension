@@ -201,6 +201,11 @@ async function callOllamaServer(
 			},
 		});
 
+		log.appendLine(`[Ollama Server] Sending prompt to model "${ollamaServerModel}":`);
+		log.appendLine(`[Ollama Server] Prompt: ${JSON.stringify(prompt)}`);
+		log.appendLine(`[Ollama Server] Options: ${JSON.stringify(cleanOptions)}`);
+		log.appendLine(`[Ollama Server] URL: ${ollamaServerUrl}/api/generate`);
+
 		const response = await fetch(`${ollamaServerUrl}/api/generate`, {
 			method: "POST",
 			headers: {
@@ -219,6 +224,8 @@ async function callOllamaServer(
 			);
 		}
 		const data = await response.json();
+		log.appendLine(`[Ollama Server] Raw response: ${JSON.stringify(data, null, 2)}`);
+		
 		if (
 			typeof data === "object" &&
 			data !== null &&
@@ -226,6 +233,7 @@ async function callOllamaServer(
 			"done" in data
 		) {
 			const ollamaResponse = data as OllamaResponse;
+			log.appendLine(`[Ollama Server] Extracted response: "${ollamaResponse.response}"`);
 			return ollamaResponse.response;
 		} else {
 			throw new Error("Invalid response format from Ollama Server API");

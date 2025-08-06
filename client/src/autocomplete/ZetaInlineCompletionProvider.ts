@@ -1,3 +1,4 @@
+import * as vscode from "vscode";
 import {
 	InlineCompletionItem,
 	TextDocument,
@@ -20,7 +21,12 @@ import { createEditPrediction } from "./prediction-navigator/utils";
 export class ZetaInlineCompletionProvider {
 	private debouncer = new RequestDebouncer();
 	private currentAbortController: AbortController | null = null;
-	constructor(private predictionNavigator: PredictionNavigator) {}
+	private toolbarDecorationType: vscode.TextEditorDecorationType;
+	
+	constructor(private predictionNavigator: PredictionNavigator) {
+		// Create toolbar decoration for single completions
+		this.toolbarDecorationType = vscode.window.createTextEditorDecorationType({});
+	}
 
 	async provideInlineCompletionItems(
 		document: TextDocument,

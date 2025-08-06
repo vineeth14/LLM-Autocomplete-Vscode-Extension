@@ -23,12 +23,12 @@ export class PredictionNavigator {
 				backgroundColor: "rgba(0, 255, 0, 0.1)",
 			});
 
-		// Pastel purple highlighted ghost text
+		// Sophisticated muted purple ghost text
 		this.ghostTextDecorationType =
 			vscode.window.createTextEditorDecorationType({
 				after: {
-					color: "#8B5CF6",
-					backgroundColor: "rgba(221, 214, 254, 0.4)",
+					color: "#6B5B95",
+					backgroundColor: "rgba(107, 91, 149, 0.08)",
 					fontStyle: "italic",
 				},
 			});
@@ -61,6 +61,8 @@ export class PredictionNavigator {
 			"zetaPredictionsActive",
 			true
 		);
+		
+		
 		this.showCurrentPrediction();
 		log.appendLine(`[PredictionNavigator] Finished showPredictions setup`);
 	}
@@ -216,8 +218,8 @@ export class PredictionNavigator {
 		);
 		editor.revealRange(prediction.edit.range);
 
-		// Update status bar
-		this.statusBarItem.text = `${this.state.currentIndex + 1}/${this.state.predictions.length} predictions`;
+		// Update status bar with keybinding hints
+		this.statusBarItem.text = `${this.state.currentIndex + 1}/${this.state.predictions.length} predictions • Tab to hop • Esc to reset`;
 		this.statusBarItem.show();
 
 		log.appendLine(
