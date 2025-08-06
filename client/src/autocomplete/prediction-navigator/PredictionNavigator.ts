@@ -23,12 +23,11 @@ export class PredictionNavigator {
 				backgroundColor: "rgba(0, 255, 0, 0.1)",
 			});
 
-		// Sophisticated muted purple ghost text
+		// Gray ghost text to match VSCode's default inline completion styling
 		this.ghostTextDecorationType =
 			vscode.window.createTextEditorDecorationType({
 				after: {
-					color: "#6B5B95",
-					backgroundColor: "rgba(107, 91, 149, 0.08)",
+					color: "rgba(128, 128, 128, 0.6)",
 					fontStyle: "italic",
 				},
 			});

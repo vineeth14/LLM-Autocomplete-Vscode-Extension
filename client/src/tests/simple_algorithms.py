@@ -1,6 +1,6 @@
 def factorial(n: int) -> int:
-    if n < 0:
-        raise ValueError("Input must be a non-negative integer")
+    if n == 1:
+        return 1
     result = 1
     for i in range(2, n + 1):
         result *= i
@@ -16,14 +16,18 @@ def find_max(numbers: list[int]) -> int:
             max_val = num
     return max_val
 
-def numberofislands(grid):
+def numberOfIslands(grid):
     rl = len(grid)  
     cl = len(grid[0])
     islands = 0
     visited = set()
 
-    def dfs(row, col):
+    def dfs(row, col): 
         if row < 0 or row >= rl or col < 0 or col >= cl:
             return False
-
-        
+        if grid[row][col] == '1' and (row, col) not in visited:
+            visited.add((row, col))
+            for dr, dc in [(0, 1), (0, -1), (-1, 0), (1, 0)]:
+                dfs(row + dr, col + dc)
+            return True
+        return False

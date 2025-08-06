@@ -22,10 +22,17 @@ export class ZetaInlineCompletionProvider {
 	private debouncer = new RequestDebouncer();
 	private currentAbortController: AbortController | null = null;
 	private toolbarDecorationType: vscode.TextEditorDecorationType;
+	private hoverDecorationType: vscode.TextEditorDecorationType;
 	
 	constructor(private predictionNavigator: PredictionNavigator) {
 		// Create toolbar decoration for single completions
 		this.toolbarDecorationType = vscode.window.createTextEditorDecorationType({});
+		
+		// Create hover decoration for multi-line previews
+		this.hoverDecorationType = vscode.window.createTextEditorDecorationType({
+			border: '1px solid rgba(128, 128, 128, 0.3)',
+			backgroundColor: 'rgba(128, 128, 128, 0.05)',
+		});
 	}
 
 	async provideInlineCompletionItems(
@@ -101,11 +108,30 @@ export class ZetaInlineCompletionProvider {
 				return [];
 			}
 
-			const predictions = groupedEdits.map((edit, index) =>
-				createEditPrediction(edit, document, index)
-			);
-			this.predictionNavigator.showPredictions(document, predictions);
-			return [];
+			// Handle single edit - check if it's multi-line
+			const singleEdit = groupedEdits[0];
+			const lines = singleEdit.newText.split('\n');
+
+			if (lines.length > 1) {
+				// Create ghost text showing first line with indicator
+				const firstLine = lines[0];
+				const lineCount = lines.length;
+				const truncatedText = firstLine + ` ...(+${lineCount - 1} lines)`;
+				
+				// Add hover decoration showing full content
+				this.showMultilineHover(singleEdit.range, singleEdit.newText);
+				
+				return [{
+					insertText: singleEdit.newText, // Insert full content when accepted
+					range: singleEdit.range,
+				}];
+			}
+
+			// Single-line edit - return as standard inline completion (default ghost text)
+			return [{
+				insertText: singleEdit.newText,
+				range: singleEdit.range,
+			}];
 		} catch (err: any) {
 			// Clear abort controller on error
 			this.currentAbortController = null;
@@ -115,5 +141,35 @@ export class ZetaInlineCompletionProvider {
 			// Clear abort controller when request completes successfully
 			this.currentAbortController = null;
 		}
+	}
+
+	private showMultilineHover(range: vscode.Range, fullContent: string) {
+		const editor = vscode.window.activeTextEditor;
+		if (!editor) return;
+
+		// Create hover message with full multi-line content
+		const hoverMessage = new vscode.MarkdownString();
+		hoverMessage.appendCodeblock(fullContent, 'python');
+		hoverMessage.appendText('\n\n💡 *Full multi-line completion - press Tab to accept*');
+
+		// Set decoration with hover message
+		editor.setDecorations(this.hoverDecorationType, [{
+			range,
+			hoverMessage
+		}]);
+
+		// Clear decoration after a timeout or when user moves cursor
+		const clearDecoration = () => {
+			editor.setDecorations(this.hoverDecorationType, []);
+		};
+
+		// Clear after 10 seconds
+		setTimeout(clearDecoration, 10000);
+
+		// Clear when cursor moves (listen once)
+		const disposable = vscode.window.onDidChangeTextEditorSelection(() => {
+			clearDecoration();
+			disposable.dispose();
+		});
 	}
 }
