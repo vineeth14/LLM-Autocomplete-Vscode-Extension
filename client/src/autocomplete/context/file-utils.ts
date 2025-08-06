@@ -1,5 +1,4 @@
 import * as vscode from "vscode";
-import { contextLog } from "../../extension";
 
 export async function readRangeInFile(
 	filepath: string,
@@ -9,9 +8,6 @@ export async function readRangeInFile(
 		const document = await vscode.workspace.openTextDocument(filepath);
 		return document.getText(range);
 	} catch (error) {
-		contextLog.appendLine(
-			`[readRangeInFile] Error reading ${filepath}: ${error}`
-		);
 		return "";
 	}
 }
@@ -29,7 +25,6 @@ export async function gotoDefinition(
 
 		return definitions || [];
 	} catch (error) {
-		contextLog.appendLine(`[gotoDefinition] Error: ${error}`);
 		return [];
 	}
 }

@@ -17,18 +17,19 @@ import {
 	runFunctionCompletionTests,
 } from "./tests/latency-test";
 import { runLLMJudgeTests } from "./tests/llm-judge-test";
-import { runMultiEditTests, runRealMultiEditTests } from "./tests/multi-edit-test";
+import {
+	runMultiEditTests,
+	runRealMultiEditTests,
+} from "./tests/multi-edit-test";
 import { PredictionNavigator } from "./autocomplete/prediction-navigator/PredictionNavigator";
 import { PredictionCommands } from "./autocomplete/prediction-navigator/commands";
 
 let client: LanguageClient;
 
-// Global debug -> print to extension host output channels
+// Only keep log channel for latency testing
 export const log = vscode.window.createOutputChannel("LLM Tab Complete");
-export const contextLog = vscode.window.createOutputChannel("Context");
 
 export function activate(context: ExtensionContext) {
-	log.appendLine("Extension activated");
 	log.show();
 	// The server is implemented in node
 	const serverModule = context.asAbsolutePath(

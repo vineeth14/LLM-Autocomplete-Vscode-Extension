@@ -1,12 +1,12 @@
 import { CancellationToken } from "vscode";
 import { systemPrompt } from "./prompt";
+import { log } from "../extension";
 import {
 	Parameters,
 	OllamaResponse,
 	GeminiResponse,
 	CompletionOptions,
 } from "./types";
-import { log } from "../extension";
 import { Agent } from "http";
 import * as dotenv from "dotenv";
 import * as path from "path";
@@ -50,7 +50,6 @@ export async function callProvider(
 	abortSignal?: AbortSignal
 ): Promise<string> {
 	const provider = options?.provider || DEFAULT_PROVIDER;
-	log.appendLine(`[Provider Selection] Using provider: ${provider}`);
 	switch (provider) {
 		case "ollama_local":
 			return callOllamaLocal(prompt, options, token);
@@ -93,7 +92,6 @@ async function callGemini(
 			if (response.status === 429) {
 				// Rate limited - exponential backoff
 				const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
-				log.appendLine(`[Gemini] Rate limited, retrying in ${delay}ms`);
 				await new Promise(resolve => setTimeout(resolve, delay));
 				retryCount++;
 				continue;
@@ -123,12 +121,14 @@ async function callOllamaLocal(
 ): Promise<string> {
 	const controller = new AbortController();
 	try {
+		// Remove provider field before sending to Ollama
+		const { provider, ...cleanOptions } = options || {};
 		const requestBody = JSON.stringify({
 			model: ollamaLocalModel,
 			prompt: prompt,
 			stream: false,
 			keep_alive: "10m",
-			options: options || {
+			options: cleanOptions || {
 				temperature: 0,
 				top_p: 0.95,
 				num_predict: 50,
@@ -177,12 +177,14 @@ async function callOllamaServer(
 ): Promise<string> {
 	const controller = new AbortController();
 	try {
+		// Remove provider field before sending to Ollama
+		const { provider, ...cleanOptions } = options || {};
 		const requestBody = JSON.stringify({
 			model: ollamaServerModel,
 			prompt: prompt,
 			stream: false,
-			keep_alive: "10m",
-			options: options || {
+			keep_alive: -1,
+			options: cleanOptions || {
 				temperature: 0.1,
 				top_p: 0.3,
 				num_predict: 30,
@@ -263,7 +265,6 @@ export async function getSuggestion(
 			return undefined;
 		}
 
-		log.appendLine(`[Final] "${filteredSuggestion}"`);
 		return filteredSuggestion;
 	} catch (err: any) {
 		if (
@@ -272,7 +273,6 @@ export async function getSuggestion(
 		) {
 			return undefined;
 		}
-		log.appendLine(`[getSuggestion] Error: ${err?.message || err}`);
 		return undefined;
 	}
 }

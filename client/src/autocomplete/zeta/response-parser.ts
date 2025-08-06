@@ -28,6 +28,11 @@ export interface ZetaEdit {
 
 export function parseZetaResponse(rawResponse: string): ParsedZetaResponse {
 	try {
+		// Debug logging for end-of-line completion issues
+		log.appendLine(`[DEBUG] Raw response length: ${rawResponse.length} chars`);
+		log.appendLine(`[DEBUG] Raw response preview: "${rawResponse.substring(0, 200)}..."`);
+		log.appendLine(`[DEBUG] Raw response has start marker: ${rawResponse.includes(EDITABLE_REGION_START_MARKER)}, has end marker: ${rawResponse.includes(EDITABLE_REGION_END_MARKER)}`);
+		
 		// Remove cursor markers first
 		let content = rawResponse.replace(
 			new RegExp(escapeRegex(CURSOR_MARKER), "g"),
@@ -123,6 +128,7 @@ export function computeAllEdits(oldText: string, newText: string): TextEdit[] {
 			oldPos += text.length;
 		}
 	}
+
 	return edits;
 }
 
@@ -131,18 +137,103 @@ export function textEditToVSCodeEdit(
 	editableRange: vscode.Range,
 	document: vscode.TextDocument
 ): ZetaEdit {
-	// Convert text edit offsets (relative to editable region) to absolute document offsets
-	const editableStartOffset = document.offsetAt(editableRange.start);
-	const startOffset = editableStartOffset + edit.start;
-	const endOffset = editableStartOffset + edit.end;
+	const editableText = document.getText(editableRange);
+	const editableLines = editableText.split("\n");
 
-	const startPos = document.positionAt(startOffset);
-	const endPos = document.positionAt(endOffset);
+	// DEBUG: Log the inputs
+	log.appendLine(`[DEBUG] textEditToVSCodeEdit called:`);
+	log.appendLine(
+		`[DEBUG] edit.start=${edit.start}, edit.end=${edit.end}, newText="${edit.newText}"`
+	);
+	log.appendLine(
+		`[DEBUG] editableRange: ${editableRange.start.line}:${editableRange.start.character} to ${editableRange.end.line}:${editableRange.end.character}`
+	);
+	log.appendLine(
+		`[DEBUG] editableText length=${editableText.length}: "${editableText.substring(0, 50)}..."`
+	);
+	log.appendLine(`[DEBUG] editableLines count=${editableLines.length}`);
 
-	return {
+	let startLine = 0,
+		startChar = edit.start;
+	for (const line of editableLines) {
+		if (startChar <= line.length) break;
+		startChar -= line.length + 1; // +1 for newline
+		startLine++;
+	}
+
+	let endLine = 0,
+		endChar = edit.end;
+	for (const line of editableLines) {
+		if (endChar <= line.length) break;
+		endChar -= line.length + 1;
+		endLine++;
+	}
+
+	// DEBUG: Log the calculations
+	log.appendLine(
+		`[DEBUG] Calculated: startLine=${startLine}, startChar=${startChar}, endLine=${endLine}, endChar=${endChar}`
+	);
+
+	const startPos = new vscode.Position(
+		editableRange.start.line + startLine,
+		startLine === 0 ? editableRange.start.character + startChar : startChar
+	);
+	const endPos = new vscode.Position(
+		editableRange.start.line + endLine,
+		endLine === 0 ? editableRange.start.character + endChar : endChar
+	);
+
+	// DEBUG: Log final positions
+	log.appendLine(
+		`[DEBUG] Final positions: startPos=${startPos.line}:${startPos.character}, endPos=${endPos.line}:${endPos.character}`
+	);
+
+	const result = {
 		range: new vscode.Range(startPos, endPos),
 		newText: edit.newText,
 	};
+
+	return result;
+}
+
+export function mergeOverlappingEdits(
+	edits: TextEdit[],
+	oldText: string
+): TextEdit[] {
+	if (edits.length <= 1) return edits;
+
+	const sorted = [...edits].sort((a, b) => a.start - b.start);
+
+	const merged: TextEdit[] = [];
+	let current = sorted[0];
+
+	for (let i = 1; i < sorted.length; i++) {
+		const next = sorted[i];
+
+		// Check if current and next should be merged
+		if (current.end >= next.start - 2) {
+			const mergedStart = Math.min(current.start, next.start);
+			const mergedEnd = Math.max(current.end, next.end);
+
+			// Get the text that was between the two edits
+			const betweenText = oldText.substring(current.end, next.start);
+			const combinedText = current.newText + betweenText + next.newText;
+
+			current = {
+				start: mergedStart,
+				end: mergedEnd,
+				newText: combinedText,
+			};
+		} else {
+			// No overlap - keep current and move to next
+			merged.push(current);
+			current = next;
+		}
+	}
+
+	// Don't forget the last edit
+	merged.push(current);
+	return merged;
 }
 
 export function processZetaResponse(
@@ -150,6 +241,11 @@ export function processZetaResponse(
 	editableRange: vscode.Range,
 	document: vscode.TextDocument
 ): ZetaEdit[] {
+	// DEBUG: Log the editable range being processed
+	log.appendLine(
+		`[DEBUG] processZetaResponse called with editableRange: ${editableRange.start.line}:${editableRange.start.character} to ${editableRange.end.line}:${editableRange.end.character}`
+	);
+
 	const parsed = parseZetaResponse(rawResponse);
 	if (!parsed.isValid) {
 		log.appendLine(`[Zeta Debug] Parse failed: ${parsed.error}`);
@@ -157,11 +253,34 @@ export function processZetaResponse(
 	}
 
 	const oldText = document.getText(editableRange);
+	log.appendLine(
+		`[DEBUG] oldText from editableRange: "${oldText.substring(0, 100)}..."`
+	);
+	log.appendLine(
+		`[DEBUG] parsed.extractedCode: "${parsed.extractedCode.substring(0, 100)}..."`
+	);
 
 	const allEdits = computeAllEdits(oldText, parsed.extractedCode);
-	return allEdits
-		.filter(edit => !(edit.start === edit.end && edit.newText === ""))
-		.map(edit => textEditToVSCodeEdit(edit, editableRange, document));
+	const filteredEdits = allEdits.filter(
+		edit => !(edit.start === edit.end && edit.newText === "")
+	);
+
+	// Merge overlapping/adjacent edits to fix character-by-character issues
+	const mergedEdits = mergeOverlappingEdits(filteredEdits, oldText);
+
+	const vscodeEdits = mergedEdits.map(edit =>
+		textEditToVSCodeEdit(edit, editableRange, document)
+	);
+
+	// Log each final edit with essential context
+	vscodeEdits.forEach((edit, index) => {
+		const lineText = document.lineAt(edit.range.start.line).text;
+		log.appendLine(
+			`[Edit ${index + 1}] Line ${edit.range.start.line}:${edit.range.start.character}-${edit.range.end.character} | "${edit.newText.replace(/\n/g, "\\n")}" | Context: "${lineText}"`
+		);
+	});
+
+	return vscodeEdits;
 }
 
 export function groupEditsNearCursor(

@@ -1,7 +1,6 @@
 import * as vscode from "vscode";
 import { Parameters } from "../types";
 import { getAst } from "./ast";
-import { contextLog } from "../../extension";
 import { getTreePathAtCursor, getContextForPath } from "./ast";
 
 export class ContextRetrievalService {
@@ -92,9 +91,6 @@ export class ContextRetrievalService {
 		const currentLineText = lines[currentLine] || "";
 		const isAtEndOfLine = currentChar === currentLineText.length;
 
-		contextLog.appendLine(
-			`[Context] Prefix: ${prefix.split("\n").length} lines, Suffix: ${suffix.split("\n").length} lines`
-		);
 
 		return {
 			prefix: prefix,
@@ -212,9 +208,6 @@ export class ContextRetrievalService {
 			endLine = i;
 		}
 
-		contextLog.appendLine(
-			`[Context Window] ${currentLine - startLine} prefix lines, ${endLine - currentLine} suffix lines`
-		);
 
 		return { startLine, endLine };
 	}

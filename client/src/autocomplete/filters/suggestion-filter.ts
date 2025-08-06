@@ -1,4 +1,3 @@
-import { log } from "../../extension";
 import * as levenshtein from "fast-levenshtein";
 import { LCS } from "js-lcs";
 
@@ -155,7 +154,6 @@ export function filterSuggestion(
 		return undefined;
 	}
 	if (contextPrefix && rewritesLineAbove(filteredLines, contextPrefix)) {
-		log.append("[Duplication] Suggestion is too close to above prefix");
 		return undefined;
 	}
 	if (isExtremeRepetition(filteredLines)) {

@@ -23,12 +23,12 @@ export class PredictionNavigator {
 				backgroundColor: "rgba(0, 255, 0, 0.1)",
 			});
 
-		// Soft blue highlighted ghost text
+		// Pastel purple highlighted ghost text
 		this.ghostTextDecorationType =
 			vscode.window.createTextEditorDecorationType({
 				after: {
-					color: "#4A90E2",
-					backgroundColor: "rgba(173, 216, 230, 0.3)",
+					color: "#8B5CF6",
+					backgroundColor: "rgba(221, 214, 254, 0.4)",
 					fontStyle: "italic",
 				},
 			});
@@ -44,9 +44,11 @@ export class PredictionNavigator {
 		predictions: EditPrediction[]
 	): void {
 		if (predictions.length === 0) return;
-		
-		log.appendLine(`[PredictionNavigator] showPredictions called with ${predictions.length} predictions`);
-		
+
+		log.appendLine(
+			`[PredictionNavigator] showPredictions called with ${predictions.length} predictions`
+		);
+
 		this.state = {
 			predictions,
 			currentIndex: 0,
@@ -72,6 +74,23 @@ export class PredictionNavigator {
 			return this.moveToNext();
 		}
 
+		const edit = currentPrediction.edit;
+		log.appendLine(
+			`[PredictionNavigator] ===== APPLYING EDIT ${this.state.currentIndex + 1}/${this.state.predictions.length} =====`
+		);
+		log.appendLine(
+			`[PredictionNavigator] Range: line ${edit.range.start.line}:${edit.range.start.character} to ${edit.range.end.line}:${edit.range.end.character}`
+		);
+		log.appendLine(
+			`[PredictionNavigator] Current text at range: "${this.state.document.getText(edit.range)}"`
+		);
+		log.appendLine(
+			`[PredictionNavigator] Replacing with: "${edit.newText}"`
+		);
+		log.appendLine(
+			`[PredictionNavigator] Line context before: "${this.state.document.lineAt(edit.range.start.line).text}"`
+		);
+
 		const workspaceEdit = new vscode.WorkspaceEdit();
 		workspaceEdit.replace(
 			this.state.document.uri,
@@ -82,8 +101,37 @@ export class PredictionNavigator {
 		const success = await vscode.workspace.applyEdit(workspaceEdit);
 
 		if (!success) {
+			log.appendLine(`[PredictionNavigator] ❌ EDIT FAILED to apply`);
 			return false;
 		}
+
+		log.appendLine(`[PredictionNavigator] ✅ EDIT APPLIED successfully`);
+		if (edit.range.start.line < this.state.document.lineCount) {
+			const newLineText = this.state.document.lineAt(
+				edit.range.start.line
+			).text;
+			log.appendLine(
+				`[PredictionNavigator] Line context after: "${newLineText}"`
+			);
+		}
+
+		// Check if this was a multi-line edit AND there are remaining predictions
+		const isMultiLineEdit =
+			currentPrediction.edit.newText.includes("\n") ||
+			currentPrediction.edit.range.start.line !==
+				currentPrediction.edit.range.end.line;
+		const hasRemainingPredictions =
+			this.state.currentIndex + 1 < this.state.predictions.length;
+
+		if (isMultiLineEdit && hasRemainingPredictions) {
+			log.appendLine(
+				`[PredictionNavigator] Multi-line edit with remaining predictions - invalidating remaining predictions`
+			);
+			// Multi-line edits invalidate remaining predictions due to line number changes
+			this.cancelAllPredictions();
+			return false;
+		}
+
 		return this.moveToNext();
 	}
 
@@ -113,7 +161,9 @@ export class PredictionNavigator {
 	private showCurrentPrediction(): void {
 		if (!this.state) return;
 
-		log.appendLine(`[PredictionNavigator] showCurrentPrediction called for index ${this.state.currentIndex}`);
+		log.appendLine(
+			`[PredictionNavigator] showCurrentPrediction called for index ${this.state.currentIndex}`
+		);
 
 		this.clearDecorations();
 
@@ -125,33 +175,39 @@ export class PredictionNavigator {
 			editor.document.uri.toString() !==
 				this.state.document.uri.toString()
 		) {
-			log.appendLine(`[PredictionNavigator] No active editor or document mismatch`);
+			log.appendLine(
+				`[PredictionNavigator] No active editor or document mismatch`
+			);
 			return;
 		}
 
-		log.appendLine(`[PredictionNavigator] Setting decorations for range: ${prediction.edit.range.start.line}:${prediction.edit.range.start.character} to ${prediction.edit.range.end.line}:${prediction.edit.range.end.character}`);
+		log.appendLine(
+			`[PredictionNavigator] Setting decorations for range: ${prediction.edit.range.start.line}:${prediction.edit.range.start.character} to ${prediction.edit.range.end.line}:${prediction.edit.range.end.character}`
+		);
 
-		// Show green highlighted ghost text preview at cursor position
+		// Show purple ghost text preview at cursor position
 		const ghostRange = new vscode.Range(
 			prediction.edit.range.start,
 			prediction.edit.range.start
 		);
+		
+		// Show full text, replacing newlines with visual separator
+		const previewText = prediction.edit.newText.replace(/\n/g, " ↵ ");
+			
 		editor.setDecorations(this.ghostTextDecorationType, [
 			{
 				range: ghostRange,
 				renderOptions: {
 					after: {
-						contentText:
-							prediction.edit.newText.split("\n")[0] +
-							(prediction.edit.newText.includes("\n")
-								? "..."
-								: ""),
+						contentText: previewText,
 					},
 				},
 			},
 		]);
 
-		log.appendLine(`[PredictionNavigator] Applied decorations, ghost text: "${prediction.edit.newText.split("\n")[0]}"`);
+		log.appendLine(
+			`[PredictionNavigator] Applied decorations, ghost text: "${prediction.edit.newText.split("\n")[0]}"`
+		);
 
 		// Move cursor to prediction location
 		editor.selection = new vscode.Selection(
@@ -163,8 +219,10 @@ export class PredictionNavigator {
 		// Update status bar
 		this.statusBarItem.text = `${this.state.currentIndex + 1}/${this.state.predictions.length} predictions`;
 		this.statusBarItem.show();
-		
-		log.appendLine(`[PredictionNavigator] Status bar updated: ${this.statusBarItem.text}`);
+
+		log.appendLine(
+			`[PredictionNavigator] Status bar updated: ${this.statusBarItem.text}`
+		);
 	}
 
 	private clearDecorations(): void {
