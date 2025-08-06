@@ -26,8 +26,6 @@ export function createEditPrediction(
 				.update(document.getText())
 				.digest("hex"),
 		},
-		confidence: 0.8,
-		description: `Edit ${index + 1}: ${edit.newText.split("\n")[0].substring(0, 50)}...`,
 		isValid: true,
 	};
 }

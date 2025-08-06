@@ -12,8 +12,6 @@ export interface EditPrediction {
 	edit: ZetaEdit;
 	anchor: DocumentAnchor;
 	snapshot: DocumentSnapshot;
-	confidence: number;
-	description: string;
 	isValid: boolean;
 }
 export interface DocumentAnchor {

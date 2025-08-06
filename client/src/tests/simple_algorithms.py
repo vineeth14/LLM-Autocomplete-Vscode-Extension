@@ -25,9 +25,17 @@ def numberOfIslands(grid):
     def dfs(row, col): 
         if row < 0 or row >= rl or col < 0 or col >= cl:
             return False
-        if grid[row][col] == '1' and (row, col) not in visited:
-            visited.add((row, col))
-            for dr, dc in [(0, 1), (0, -1), (-1, 0), (1, 0)]:
-                dfs(row + dr, col + dc)
-            return True
-        return False
+        key = (row, col)
+        if grid[row][col] == '1' and key not in visited:
+            visited.add(key)
+            dfs(row + 1, col)  
+            dfs(row - 1, col)  
+            dfs(row, col + 1)  
+            dfs(row, col - 1)  
+        return True
+    for row in range(rl):
+        for col in range(cl):
+            if grid[row][col] == '1' and (row, col) not in visited:
+                islands += 1
+                dfs(row, col)
+    return islands
