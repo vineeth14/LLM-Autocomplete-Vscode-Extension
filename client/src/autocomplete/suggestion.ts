@@ -1,19 +1,19 @@
 import { CancellationToken } from "vscode";
 import { systemPrompt } from "./prompt";
+import { log } from "../extension";
 import {
 	Parameters,
 	OllamaResponse,
 	GeminiResponse,
 	CompletionOptions,
 } from "./types";
-import { log } from "../extension";
 import { Agent } from "http";
 import * as dotenv from "dotenv";
 import * as path from "path";
 import { filterSuggestion } from "./filters/suggestion-filter";
 
 // Load environment variables from .env file
-dotenv.config({ path: path.join(__dirname, "../.env") });
+dotenv.config({ path: path.join(__dirname, "../../.env") });
 
 const DEFAULT_PROVIDER = process.env.LLM_PROVIDER || "ollama_local";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -23,9 +23,15 @@ const GOOGLE_CLOUD_LOCATION =
 
 // Dual Ollama configuration
 const ollamaLocalUrl = process.env.OLLAMA_LOCAL_URL || "http://localhost:11434";
-const ollamaServerUrl = process.env.OLLAMA_SERVER_URL || process.env.OLLAMA_URL || "http://localhost:11434";
+const ollamaServerUrl =
+	process.env.OLLAMA_SERVER_URL ||
+	process.env.OLLAMA_URL ||
+	"http://localhost:11434";
 const ollamaLocalModel = process.env.OLLAMA_LOCAL_MODEL || "starcoder:3b";
-const ollamaServerModel = process.env.OLLAMA_SERVER_MODEL || process.env.OLLAMA_MODEL || "starcoder:3b";
+const ollamaServerModel =
+	process.env.OLLAMA_SERVER_MODEL ||
+	process.env.OLLAMA_MODEL ||
+	"starcoder:3b";
 
 const geminiModel = process.env.GEMINI_MODEL || "gemini-2.5-flash-lite";
 
@@ -37,17 +43,18 @@ const httpAgent = new Agent({
 	timeout: parseInt(process.env.HTTP_TIMEOUT || "3000"),
 });
 
-async function callProvider(
+export async function callProvider(
 	prompt: string,
 	options?: CompletionOptions,
-	token?: CancellationToken
+	token?: CancellationToken,
+	abortSignal?: AbortSignal
 ): Promise<string> {
 	const provider = options?.provider || DEFAULT_PROVIDER;
 	switch (provider) {
 		case "ollama_local":
 			return callOllamaLocal(prompt, options, token);
 		case "ollama_server":
-			return callOllamaServer(prompt, options, token);
+			return callOllamaServer(prompt, options, token, abortSignal);
 		case "gemini":
 			return callGemini(prompt, options, token);
 		default:
@@ -85,7 +92,6 @@ async function callGemini(
 			if (response.status === 429) {
 				// Rate limited - exponential backoff
 				const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
-				log.appendLine(`[Gemini] Rate limited, retrying in ${delay}ms`);
 				await new Promise(resolve => setTimeout(resolve, delay));
 				retryCount++;
 				continue;
@@ -108,7 +114,6 @@ async function callGemini(
 	throw new Error("Max retries exceeded");
 }
 
-
 async function callOllamaLocal(
 	prompt: string,
 	options?: CompletionOptions,
@@ -116,22 +121,19 @@ async function callOllamaLocal(
 ): Promise<string> {
 	const controller = new AbortController();
 	try {
+		// Remove provider field before sending to Ollama
+		const { provider, ...cleanOptions } = options || {};
 		const requestBody = JSON.stringify({
 			model: ollamaLocalModel,
 			prompt: prompt,
 			stream: false,
 			keep_alive: "10m",
-			options: options || {
+			options: cleanOptions || {
 				temperature: 0,
 				top_p: 0.95,
 				num_predict: 50,
 				repeat_penalty: 1.1,
-				stop: [
-					"<fim_prefix>",
-					"<fim_suffix>",
-					"<fim_middle>",
-					"\n\n",
-				],
+				stop: ["<fim_prefix>", "<fim_suffix>", "<fim_middle>", "\n\n"],
 			},
 		});
 
@@ -170,16 +172,19 @@ async function callOllamaLocal(
 async function callOllamaServer(
 	prompt: string,
 	options?: CompletionOptions,
-	token?: CancellationToken
+	token?: CancellationToken,
+	abortSignal?: AbortSignal
 ): Promise<string> {
 	const controller = new AbortController();
 	try {
+		// Remove provider field before sending to Ollama
+		const { provider, ...cleanOptions } = options || {};
 		const requestBody = JSON.stringify({
 			model: ollamaServerModel,
 			prompt: prompt,
 			stream: false,
-			keep_alive: "10m",
-			options: options || {
+			keep_alive: -1,
+			options: cleanOptions || {
 				temperature: 0.1,
 				top_p: 0.3,
 				num_predict: 30,
@@ -196,6 +201,11 @@ async function callOllamaServer(
 			},
 		});
 
+		log.appendLine(`[Ollama Server] Sending prompt to model "${ollamaServerModel}":`);
+		log.appendLine(`[Ollama Server] Prompt: ${JSON.stringify(prompt)}`);
+		log.appendLine(`[Ollama Server] Options: ${JSON.stringify(cleanOptions)}`);
+		log.appendLine(`[Ollama Server] URL: ${ollamaServerUrl}/api/generate`);
+
 		const response = await fetch(`${ollamaServerUrl}/api/generate`, {
 			method: "POST",
 			headers: {
@@ -203,6 +213,7 @@ async function callOllamaServer(
 				Connection: "keep-alive",
 			},
 			body: requestBody,
+			signal: abortSignal || controller.signal,
 			// @ts-ignore - TypeScript doesn't recognize agent in fetch
 			agent: httpAgent,
 		});
@@ -213,6 +224,8 @@ async function callOllamaServer(
 			);
 		}
 		const data = await response.json();
+		log.appendLine(`[Ollama Server] Raw response: ${JSON.stringify(data, null, 2)}`);
+		
 		if (
 			typeof data === "object" &&
 			data !== null &&
@@ -220,6 +233,7 @@ async function callOllamaServer(
 			"done" in data
 		) {
 			const ollamaResponse = data as OllamaResponse;
+			log.appendLine(`[Ollama Server] Extracted response: "${ollamaResponse.response}"`);
 			return ollamaResponse.response;
 		} else {
 			throw new Error("Invalid response format from Ollama Server API");
@@ -259,7 +273,6 @@ export async function getSuggestion(
 			return undefined;
 		}
 
-		log.appendLine(`[Final] "${filteredSuggestion}"`);
 		return filteredSuggestion;
 	} catch (err: any) {
 		if (
@@ -268,7 +281,6 @@ export async function getSuggestion(
 		) {
 			return undefined;
 		}
-		log.appendLine(`[getSuggestion] Error: ${err?.message || err}`);
 		return undefined;
 	}
 }

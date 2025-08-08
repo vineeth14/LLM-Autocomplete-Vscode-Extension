@@ -6,6 +6,8 @@ export interface Parameters {
 	prefix: string;
 	suffix: string;
 	context?: string;
+	language?: string;
+	filename?: string;
 	// Enhanced position information
 	cursorOffset?: number;
 	isAtEndOfLine?: boolean;

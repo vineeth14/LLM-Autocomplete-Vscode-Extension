@@ -1,7 +1,6 @@
 import * as Parser from "web-tree-sitter";
 import * as path from "path";
 import * as fs from "fs";
-import { contextLog } from "../../extension";
 import { AutocompleteSnippet } from "./types";
 import { language } from "tree-sitter-python";
 import { LRUCache } from "vscode-languageclient";
@@ -12,9 +11,8 @@ import { readRangeInFile, gotoDefinition } from "./file-utils";
 export type AstPath = Parser.SyntaxNode[];
 
 const TYPES_TO_USE = new Set([
-	// "module",
+	"module",
 	"function_definition",
-	//"program",
 	"class_definition",
 ]);
 
@@ -39,12 +37,21 @@ async function initializeParser(): Promise<Parser.Language | null> {
 		parserInitialized = true;
 		return pythonLanguage;
 	} catch (error) {
-		contextLog.appendLine(`[AST] Failed to initialize parser: ${error}`);
 		return null;
 	}
 }
 
 // Core AST parsing functions
+
+export function nodeToRange(
+	document: vscode.TextDocument,
+	node: Parser.SyntaxNode
+): vscode.Range {
+	return new vscode.Range(
+		new vscode.Position(node.startPosition.row, node.startPosition.column),
+		new vscode.Position(node.endPosition.row, node.endPosition.column)
+	);
+}
 
 export async function getAst(
 	fileContents: string
@@ -57,7 +64,6 @@ export async function getAst(
 		parser.setLanguage(language);
 		return parser.parse(fileContents);
 	} catch (error) {
-		contextLog.appendLine(`[AST] Error during parsing: ${error}`);
 		return undefined;
 	}
 }
@@ -161,11 +167,10 @@ async function getSnippetsForNode(
 	}
 
 	// Execute query and collect snippets from captures
-	//const matches = query.matches(astNode);
+	const matches = query.matches(astNode);
 
 	// Process matches based on node type
-	const queries = query
-		.matches(astNode)
+	const queries = matches
 		.map(async (match: Parser.QueryMatch) => {
 			const matchSnippets: AutocompleteSnippet[] = [];
 			for (const item of match.captures) {
@@ -177,9 +182,6 @@ async function getSnippetsForNode(
 					);
 					matchSnippets.push(...newSnippets);
 				} catch (e) {
-					contextLog.appendLine(
-						`[getSnippetsForNode] Error processing capture for ${astNode.type} at ${item.node.startPosition.row}:${item.node.startPosition.column}: ${e}`
-					);
 				}
 			}
 			return matchSnippets;
@@ -207,9 +209,6 @@ async function getSnippets(
 					def.targetUri.fsPath,
 					def.targetRange
 				).catch(error => {
-					contextLog.appendLine(
-						`[getSnippets] Failed to read range for definition at ${def.targetUri.fsPath} ${def.targetRange.start.line}:${def.targetRange.start.character}: ${error}`
-					);
 					return "// Failed to read definition content";
 				}),
 				filepath: def.targetUri.fsPath,
@@ -233,7 +232,6 @@ async function getQuery(nodeType: string): Promise<Parser.Query | undefined> {
 		const querySource = fs.readFileSync(queryPath, "utf8");
 		return language.query(querySource);
 	} catch (error) {
-		contextLog.appendLine(`[AST] Failed to load query for ${nodeType}: ${error}`);
 		return undefined;
 	}
 }
@@ -247,12 +245,24 @@ function findQueryFile(nodeType: string): string | undefined {
 	// Additional fallback for different project structures
 	const possiblePaths = [
 		basePath,
-		path.join(__dirname, "../../../../../custom-llm-autocomplete/client/src/autocomplete/context"),
-		path.join(__dirname, "../../../../../../custom-llm-autocomplete/client/src/autocomplete/context"),
+		path.join(
+			__dirname,
+			"../../../../../custom-llm-autocomplete/client/src/autocomplete/context"
+		),
+		path.join(
+			__dirname,
+			"../../../../../../custom-llm-autocomplete/client/src/autocomplete/context"
+		),
 	];
 
 	for (const testPath of possiblePaths) {
-		const queryPath = path.join(testPath, "languages", "python", "queries", `${nodeType}.scm`);
+		const queryPath = path.join(
+			testPath,
+			"languages",
+			"python",
+			"queries",
+			`${nodeType}.scm`
+		);
 		if (fs.existsSync(queryPath)) {
 			return queryPath;
 		}
@@ -269,4 +279,8 @@ function keyFromNode(parentKey: string, astNode: Parser.SyntaxNode): string {
 		.update(astNode.type)
 		.update(astNode.startIndex.toString())
 		.digest("hex");
+}
+
+export function estimateTokensZeta(text: string): number {
+	return Math.ceil(text.length / 3);
 }

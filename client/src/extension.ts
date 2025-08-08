@@ -10,21 +10,26 @@ import {
 } from "vscode-languageclient/node";
 
 import { LLMInlineCompletionProvider } from "./autocomplete/LLMInlineCompletionProvider";
+import { ZetaInlineCompletionProvider } from "./autocomplete/ZetaInlineCompletionProvider";
 import {
 	runLatencyTests,
 	runPartialCompletionTests,
 	runFunctionCompletionTests,
 } from "./tests/latency-test";
 import { runLLMJudgeTests } from "./tests/llm-judge-test";
+import {
+	runMultiEditTests,
+	runRealMultiEditTests,
+} from "./tests/multi-edit-test";
+import { PredictionNavigator } from "./autocomplete/prediction-navigator/PredictionNavigator";
+import { PredictionCommands } from "./autocomplete/prediction-navigator/commands";
 
 let client: LanguageClient;
 
-// Global debug -> print to extension host output channels
+// Only keep log channel for latency testing
 export const log = vscode.window.createOutputChannel("LLM Tab Complete");
-export const contextLog = vscode.window.createOutputChannel("Context");
 
 export function activate(context: ExtensionContext) {
-	log.appendLine("Extension activated");
 	log.show();
 	// The server is implemented in node
 	const serverModule = context.asAbsolutePath(
@@ -62,7 +67,12 @@ export function activate(context: ExtensionContext) {
 	// Start the client. This will also launch the server
 	client.start();
 
-	const provider = new LLMInlineCompletionProvider();
+	// Create prediction navigator and commands
+	const predictionNavigator = new PredictionNavigator(context);
+	const predictionCommands = new PredictionCommands(predictionNavigator);
+	predictionCommands.registerCommands(context);
+
+	const provider = new ZetaInlineCompletionProvider(predictionNavigator);
 
 	const disposable = languages.registerInlineCompletionItemProvider(
 		{ pattern: "**" },
@@ -87,12 +97,22 @@ export function activate(context: ExtensionContext) {
 		"llm-autocomplete.runJudgeTests",
 		runLLMJudgeTests
 	);
+	const multiEditTestCommand = vscode.commands.registerCommand(
+		"llm-autocomplete.runMultiEditTests",
+		runMultiEditTests
+	);
+	const realMultiEditTestCommand = vscode.commands.registerCommand(
+		"llm-autocomplete.runRealMultiEditTests",
+		runRealMultiEditTests
+	);
 
 	context.subscriptions.push(
 		testCommand,
 		partialTestCommand,
 		functionTestCommand,
-		judgeTestCommand
+		judgeTestCommand,
+		multiEditTestCommand,
+		realMultiEditTestCommand
 	);
 }
 
