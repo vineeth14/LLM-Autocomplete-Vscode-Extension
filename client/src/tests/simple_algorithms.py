@@ -1,41 +1,27 @@
-def factorial(n: int) -> int:
-    if n == 1:
-        return 1
-    result = 1
-    for i in range(2, n + 1):
-        result *= i
+
+def topological_sort(graph):
+    from collections import defaultdict, deque
+    
+    in_degree = defaultdict(int)
+    adj_list = defaultdict(list)
+
+    for node 
+        if node not in in_degree:
+            in_degree[] = 0
+        for neighbor in graph[node]:
+           adj_list[node].append(neighbor)
+            in_degree[neighbor] += 1
+    queue = deque([])
+    result = []
+    while queue:
+        current = queue.popleft()
+        result.append(current)
+        for neighbor in adj_list[current]:
+            in_degree[neighbor] -= 1
+            if in_degree[neighbor] == 0:
+                queue.append(neighbor)
+
+    if len(result) != len(in_degree):
+        return None  # Cycle detected
+    
     return result
-
-def find_max(numbers: list[int]) -> int:
-    """Find maximum number in list"""
-    if len(numbers) == 0:
-        raise ValueError("List is empty")
-    max_val = numbers[0]
-    for num in numbers:
-        if num > max_val:
-            max_val = num
-    return max_val
-
-def numberOfIslands(grid):
-    rl = len(grid)  
-    cl = len(grid[0])
-    islands = 0
-    visited = set()
-
-    def dfs(row, col): 
-        if row < 0 or row >= rl or col < 0 or col >= cl:
-            return False
-        key = (row, col)
-        if grid[row][col] == '1' and key not in visited:
-            visited.add(key)
-            dfs(row + 1, col)  
-            dfs(row - 1, col)  
-            dfs(row, col + 1)  
-            dfs(row, col - 1)  
-        return True
-    for row in range(rl):
-        for col in range(cl):
-            if grid[row][col] == '1' and (row, col) not in visited:
-                islands += 1
-                dfs(row, col)
-    return islands

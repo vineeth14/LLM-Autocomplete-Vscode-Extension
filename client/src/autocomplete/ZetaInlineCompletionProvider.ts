@@ -65,6 +65,8 @@ export class ZetaInlineCompletionProvider {
 				document
 			);
 
+			log.appendLine(`[Prompt] ${zetaExcerpt.prompt}`);
+
 			const startTime = performance.now();
 			const rawResponse = await callProvider(
 				zetaExcerpt.prompt,
