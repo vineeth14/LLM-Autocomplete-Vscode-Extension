@@ -1,6 +1,6 @@
-# LLM Autocomplete VSCode Extension
+# Code Completion VSCode Extension
 
-A VSCode extension that provides AI-powered inline code completion using **[Zeta](https://huggingface.co/zed-industries/zeta)** completion engine with AST-aware context extraction, multi-edit workflows, caching optimizations, and high-performance completions.
+A VSCode extension that provides AI-powered inline code completion using a completion engine built on top of the **[Zeta](https://huggingface.co/zed-industries/zeta)** model with AST-aware context extraction, multi-edit workflows, caching optimizations, and high-performance completions.
 
 ## Features
 
